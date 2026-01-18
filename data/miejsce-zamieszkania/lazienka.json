@@ -1,0 +1,10 @@
+[
+  { "polish": "umywalka", "english": "basin" },
+  { "polish": "wanna", "english": "bath" },
+  { "polish": "łazienka", "english": "bathroom" },
+  { "polish": "lustro", "english": "mirror" },
+  { "polish": "prysznic", "english": "shower" },
+  { "polish": "toaleta", "english": "toilet" },
+  { "polish": "ręcznik", "english": "towel" },
+  { "polish": "pralka", "english": "washing machine" }
+]

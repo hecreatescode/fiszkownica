@@ -1,0 +1,17 @@
+[
+  { "polish": "torba", "english": "bag" },
+  { "polish": "książki", "english": "books" },
+  { "polish": "ubrania", "english": "clothes" },
+  { "polish": "komputer", "english": "computer" },
+  { "polish": "okulary", "english": "glasses" },
+  { "polish": "słuchawki", "english": "headphones" },
+  { "polish": "dokument tożsamości", "english": "ID" },
+  { "polish": "biżuteria", "english": "jewellery" },
+  { "polish": "telefon komórkowy", "english": "mobile phone" },
+  { "polish": "pieniądze", "english": "money" },
+  { "polish": "notatnik", "english": "notepad" },
+  { "polish": "paszport", "english": "passport" },
+  { "polish": "długopis", "english": "pen" },
+  { "polish": "portfel", "english": "wallet" },
+  { "polish": "zegarek", "english": "watch" }
+]

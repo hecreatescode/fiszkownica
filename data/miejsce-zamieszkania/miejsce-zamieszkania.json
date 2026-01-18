@@ -1,0 +1,19 @@
+[
+  { "polish": "wieś", "english": "countryside" },
+  { "polish": "miasto rodzinne", "english": "home town" },
+  { "polish": "osiedle mieszkaniowe", "english": "housing estate" },
+  { "polish": "na wsi", "english": "in the country" },
+  { "polish": "mieszkać", "english": "live" },
+  { "polish": "mieszkać w dużym mieście", "english": "live in a city" },
+  { "polish": "mieszkać w małym mieście", "english": "live in a town" },
+  { "polish": "mieszkać w centrum dużego miasta", "english": "live in the city centre" },
+  { "polish": "sąsiad/sąsiadka", "english": "neighbour" },
+  { "polish": "sąsiedztwo, okolica", "english": "neighbourhood" },
+  { "polish": "starówka", "english": "old town" },
+  { "polish": "cicha okolica", "english": "quiet location" },
+  { "polish": "mieszkaniec/mieszkanka", "english": "resident" },
+  { "polish": "dzielnica mieszkaniowa", "english": "residential area" },
+  { "polish": "przedmieścia", "english": "suburbs" },
+  { "polish": "maleńki, niewielki", "english": "tiny" },
+  { "polish": "wioska", "english": "village" }
+]

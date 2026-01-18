@@ -1,0 +1,16 @@
+[
+  { "polish": "bufet, stolówka", "english": "cafeteria" },
+  { "polish": "bufet, stolówka", "english": "canteen" },
+  { "polish": "klasa, sala lekcyjna", "english": "classroom" },
+  { "polish": "świetlica", "english": "common room" },
+  { "polish": "sala komputerowa", "english": "computer room" },
+  { "polish": "sala gimnastyczna", "english": "gym" },
+  { "polish": "korytarz", "english": "hall" },
+  { "polish": "gabinet dyrektora", "english": "head teacher's office" },
+  { "polish": "laboratorium", "english": "lab" },
+  { "polish": "biblioteka", "english": "library" },
+  { "polish": "szafka (w szkole, w szatni)", "english": "locker" },
+  { "polish": "boisko, dziedziniec", "english": "playground" },
+  { "polish": "boisko sportowe", "english": "sports field" },
+  { "polish": "pokój nauczycielski", "english": "staffroom" }
+]

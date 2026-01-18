@@ -1,0 +1,17 @@
+[
+  { "polish": "wiek", "english": "age" },
+  { "polish": "adres email", "english": "email address" },
+  { "polish": "kobieta", "english": "female" },
+  { "polish": "imię", "english": "first name" },
+  { "polish": "poziom znajomości języka angielskiego", "english": "level of English" },
+  { "polish": "mężczyzna", "english": "male" },
+  { "polish": "nazwisko", "english": "last name" },
+  { "polish": "naziwsko", "english": "surname" },
+  { "polish": "narodowość", "english": "nationality" },
+  { "polish": "zawód", "english": "occupation" },
+  { "polish": "miejsce urodzenia", "english": "place of birth" },
+  { "polish": "płeć", "english": "sex" },
+  { "polish": "numer telefonu", "english": "telephone number" },
+  { "polish": "numer telefonu domowego", "english": "home number" },
+  { "polish": "numer telefonu komórkowego", "english": "mobile number" }
+]

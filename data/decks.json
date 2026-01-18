@@ -1,0 +1,308 @@
+{
+  "decks": [
+    {
+      "id": "czlowiek",
+      "name": "Człowiek",
+      "topics": [
+        {
+          "id": "autorytety",
+          "name": "Autorytety",
+          "file": "autorytety.json"
+        },
+        {
+          "id": "emocje",
+          "name": "Opisywanie uczuć i emocji",
+          "file": "emocje.json"
+        },
+        {
+          "id": "rzeczy-osobiste",
+          "name": "Rzeczy osobiste",
+          "file": "rzeczy-osobiste.json"
+        },
+        {
+          "id": "umiejetnosci",
+          "name": "Umiejętności",
+          "file": "umiejetnosci.json"
+        },
+        {
+          "id": "system-wartosci-wlasny",
+          "name": "Własny system wartości",
+          "file": "system-wartosci-wlasny.json"
+        },
+        {
+          "id": "system-wartosci-spoleczny",
+          "name": "Społeczny system wartości",
+          "file": "system-wartosci-spoleczny.json"
+        },
+        {
+          "id": "false-friends",
+          "name": "False friends",
+          "file": "false-friends.json"
+        },
+        {
+          "id": "wzrost",
+          "name": "Wzrost",
+          "file": "wzrost.json"
+        },
+        {
+          "id": "oczy",
+          "name": "Oczy",
+          "file": "oczy.json"
+        },
+        {
+          "id": "etapy-zycia",
+          "name": "Etapy życia",
+          "file": "etapy-zycia.json"
+        },
+        {
+          "id": "zainteresowania",
+          "name": "Zainteresowania",
+          "file": "zainteresowania.json"
+        },
+        {
+          "id": "cechy-charakteru",
+          "name": "Cechy charakteru",
+          "file": "cechy-charakteru.json"
+        },
+        {
+          "id": "wiek",
+          "name": "Wiek",
+          "file": "wiek.json"
+        },
+        {
+          "id": "czasowniki-zlozone",
+          "name": "Czasowniki złożone",
+          "file": "czasowniki-zlozone.json"
+        },
+        {
+          "id": "dane-osobowe",
+          "name": "Dane osobowe",
+          "file": "dane-osobowe.json"
+        },
+        {
+          "id": "wyglad-zewnetrzny",
+          "name": "Wygląd zewnętrzny",
+          "file": "wyglad-zewnetrzny.json"
+        },
+        {
+          "id": "wlosy",
+          "name": "Włosy",
+          "file": "wlosy.json"
+        }
+      ]
+    },
+    {
+      "id": "miejsce-zamieszkania",
+      "name": "Miejsce zamieszkania",
+      "topics": [
+        {
+          "id": "czesci-domu",
+          "name": "Części domu",
+          "file": "czesci-domu.json"
+        },
+        {
+          "id": "gabinet",
+          "name": "Gabinet",
+          "file": "gabinet.json"
+        },
+        {
+          "id": "inne-wyposazenie-dekoracje",
+          "name": "Inne wyposażenie i dekoracje",
+          "file": "inne-wyposazenie-dekoracje.json"
+        },
+        {
+          "id": "kuchnia-jadalnia",
+          "name": "Kuchnia i jadalnia",
+          "file": "kuchnia-jadalnia.json"
+        },
+        {
+          "id": "lazienka",
+          "name": "Łazienka",
+          "file": "lazienka.json"
+        },
+        {
+          "id": "miejsce-zamieszkania",
+          "name": "Miejsce zamieszkania",
+          "file": "miejsce-zamieszkania.json"
+        },
+        {
+          "id": "opisywanie-polozenia",
+          "name": "Opisywanie położenia",
+          "file": "opisywanie-polozenia.json"
+        },
+        {
+          "id": "order",
+          "name": "Wyrażenia z order",
+          "file": "order.json"
+        },
+        {
+          "id": "prace-domowe-1",
+          "name": "Prace domowe cz. 1",
+          "file": "prace-domowe-1.json"
+        },
+        {
+          "id": "prace-domowe-2",
+          "name": "Prace domowe cz. 2",
+          "file": "prace-domowe-2.json"
+        },
+        {
+          "id": "przedpokoj",
+          "name": "Przedpokój",
+          "file": "przedpokoj.json"
+        },
+        {
+          "id": "przeprowadzka",
+          "name": "Przeprowadzka",
+          "file": "przeprowadzka.json"
+        },
+        {
+          "id": "przymiotniki-opisujace-domy",
+          "name": "Przymiotniki opisujące domy",
+          "file": "przymiotniki-opisujace-domy.json"
+        },
+        {
+          "id": "rodzaje-domow-mieszkan",
+          "name": "Rodzaje domów i mieszkań",
+          "file": "rodzaje-domow-mieszkan.json"
+        },
+        {
+          "id": "salon",
+          "name": "Salon",
+          "file": "salon.json"
+        },
+        {
+          "id": "sypialnia",
+          "name": "Sypialnia",
+          "file": "sypialnia.json"
+        },
+        {
+          "id": "up-down",
+          "name": "Czasowniki złożone z up i down",
+          "file": "up-down.json"
+        },
+        {
+          "id": "wordpower-23",
+          "name": "Wordpower s. 23",
+          "file": "wordpower-23.json"
+        },
+        {
+          "id": "wordpower-25",
+          "name": "Wordpower s. 25",
+          "file": "wordpower-25.json"
+        },
+        {
+          "id": "wynajem-zakup",
+          "name": "Wynajmowanie i zakup mieszkania lub domu",
+          "file": "wynajem-zakup.json"
+        }
+      ]
+    },
+    {
+      "id": "edukacja",
+      "name": "Edukacja",
+      "topics": [
+        {
+          "id": "przedmioty-szkolne",
+          "name": "Przedmioty szkolne",
+          "file": "przedmioty-szkolne.json"
+        },
+        {
+          "id": "czynnosci",
+          "name": "Czynności związane z nauką",
+          "file": "czynnosci.json"
+        },
+        {
+          "id": "miejsca",
+          "name": "Miejsca w szkole",
+          "file": "miejsca.json"
+        },
+        {
+          "id": "zajecia",
+          "name": "Zajęcia pozaszkolne",
+          "file": "zajecia.json"
+        },
+        {
+          "id": "zycie",
+          "name": "Życie szkolne",
+          "file": "zycie.json"
+        },
+        {
+          "id": "zycie2",
+          "name": "Życie szkolne 2",
+          "file": "zycie2.json"
+        },
+        {
+          "id": "studia",
+          "name": "Studia wyższe",
+          "file": "studia.json"
+        },
+        {
+          "id": "oswiata",
+          "name": "System oświaty",
+          "file": "oswiata.json"
+        },
+        {
+          "id": "nauka-zycie",
+          "name": "Nauka przez całe życie",
+          "file": "nauka-zycie.json"
+        },
+        {
+          "id": "przybory",
+          "name": "Przybory szkolne",
+          "file": "przybory.json"
+        },
+        {
+          "id": "oceny",
+          "name": "Oceny szkolne",
+          "file": "oceny.json"
+        },
+        {
+          "id": "zwroty",
+          "name": "Przydatne zwroty",
+          "file": "zwroty.json"
+        },
+        {
+          "id": "wordpower-37",
+          "name": "Wordpower s. 37",
+          "file": "wordpower-37.json"
+        },
+        {
+          "id": "wordpower-39",
+          "name": "Wordpower s. 39",
+          "file": "wordpower-39.json"
+        },
+        {
+          "id": "stay",
+          "name": "Czasowniki złożone ze stay",
+          "file": "stay.json"
+        }
+      ]
+    },
+    {
+      "id": "praca",
+      "name": "Praca",
+      "topics": [
+        {
+          "id": "zawody",
+          "name": "Zawody",
+          "file": "zawody.json"
+        },
+        {
+          "id": "czynnosci-obowiazki",
+          "name": "Czynności i obowiązki",
+          "file": "czynnosci-obowiazki.json"
+        },
+        {
+          "id": "swiat-pracy",
+          "name": "Świat pracy",
+          "file": "swiat-pracy.json"
+        },
+        {
+          "id": "wybor-zawodu-1",
+          "name": "Wybór zawodu i poszukiwanie pracy cz. 1",
+          "file": "wybor-zawodu-1.json"
+        }
+      ]
+    }
+  ]
+}

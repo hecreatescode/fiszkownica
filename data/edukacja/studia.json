@@ -1,0 +1,22 @@
+[
+  { "polish": "licencjat w dziedzinie nauk humanistycznych", "english": "Bachelor of Arts" },
+  { "polish": "licencjat w dziedzinie nauk humanistycznych", "english": "BA" },
+  { "polish": "licencjat w dziedzinie nauk ścisłych", "english": "Bachelor of Science" },
+  { "polish": "licencjat w dziedzinie nauk ścisłych", "english": "BSc" },
+  { "polish": "stopień naukowy", "english": "degree" },
+  { "polish": "dyplom", "english": "diploma" },
+  { "polish": "zdobyć stopień naukowy", "english": "get a degree" },
+  { "polish": "dostać się na uczelnię", "english": "get into university" },
+  { "polish": "magister nauk humanistycznych", "english": "Master of Arts" },
+  { "polish": "magister nauk humanistycznych", "english": "MA"},
+  { "polish": "magister nauk ścisłych", "english": "Master of Science" },
+  { "polish": "magister nauk ścisłych", "english": "MSc" },
+  { "polish": "płacić czesne", "english": "pay tuition fees" },
+  { "polish": "doktor (stopień naukowy)", "english": "PhD" },
+  { "polish": "profesor", "english": "professor" },
+  { "polish": "stypendium", "english": "scholarship" },
+  { "polish": "uniwerek", "english": "uni" },
+  { "polish": "uniwersytet", "english": "university" },
+  { "polish": "wykształcenie wyższe", "english": "university education" },
+  { "polish": "student/studentka", "english": "university student" }
+]

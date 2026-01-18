@@ -1,0 +1,13 @@
+[
+  { "polish": "nad, ponad", "english": "above" },
+  { "polish": "za", "english": "behind" },
+  { "polish": "między", "english": "between" },
+  { "polish": "na dole (w budynku)", "english": "downstairs" },
+  { "polish": "w", "english": "in" },
+  { "polish": "przed", "english": "in front of" },
+  { "polish": "obok", "english": "next to" },
+  { "polish": "na", "english": "on" },
+  { "polish": "naprzeciw", "english": "opposite" },
+  { "polish": "pod", "english": "under" },
+  { "polish": "na górze (w budynku)", "english": "upstairs" }
+]

@@ -1,0 +1,20 @@
+[
+  { "polish": "świadectwo", "english": "certificate" },
+  { "polish": "ściągać na teście", "english": "cheat in a test" },
+  { "polish": "źle napisać sprawdzian", "english": "do badly in a test" },
+  { "polish": "dobrze napisać sprawdzian", "english": "do well in a test" },
+  { "polish": "nie zdać testu", "english": "fail a test" },
+  { "polish": "dostawać ocenę", "english": "get a mark" },
+  { "polish": "dostawać ocenę", "english": "get a grade" },
+  { "polish": "stawiać ocenę", "english": "give a grade" },
+  { "polish": "stawiać ocenę", "english": "give a mark" },
+  { "polish": "ocena", "english": "grade" },
+  { "polish": "ocena", "english": "mark" },
+  { "polish": "zdać test", "english": "pass a test" },
+  { "polish": "przygotowywać się do sprawdzianu", "english": "prepare for a test" },
+  { "polish": "świadectwo", "english": "report" },
+  { "polish": "pisać ponownie sprawdzian", "english": "retake a test" },
+  { "polish": "świadectwo szkolne", "english": "school certificate" },
+  { "polish": "świadectwo szkolne", "english": "school report" },
+  { "polish": "napisać test", "english": "take a test" }
+]

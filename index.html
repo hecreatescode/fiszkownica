@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiszkownica - Nauka z Fiszkami</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Fiszkownica</span>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-outline" onclick="exportProgress()" title="Eksportuj postępy">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="theme-toggle" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Menu główne -->
+            <div class="section active" id="mainMenu">
+                <div class="main-menu">
+                    <div class="menu-card" onclick="showSection('decks')">
+                        <h3><i class="fas fa-folder"></i> Moje zestawy</h3>
+                        <p>Przeglądaj i zarządzaj swoimi fiszkami</p>
+                    </div>
+                    <div class="menu-card" onclick="showSection('study')">
+                        <h3><i class="fas fa-book"></i> Nauka</h3>
+                        <p>Ucz się z fiszkami w trybie nauki</p>
+                    </div>
+                    <div class="menu-card" onclick="startQuickStudy()">
+                        <h3><i class="fas fa-bolt"></i> Szybka powtórka</h3>
+                        <p>Powtórz fiszki wymagające uwagi</p>
+                        <div class="quick-stats" id="quickStats">0 fiszek do powtórki</div>
+                    </div>
+                    <div class="menu-card" onclick="showSection('test')">
+                        <h3><i class="fas fa-pen"></i> Test</h3>
+                        <p>Sprawdź swoją wiedzę w różnych trybach testowych</p>
+                    </div>
+                    <div class="menu-card" onclick="showSection('stats')">
+                        <h3><i class="fas fa-chart-line"></i> Statystyki</h3>
+                        <p>Śledź swoje postępy i osiągnięcia</p>
+                    </div>
+                    <div class="menu-card" onclick="showSection('import')">
+                        <h3><i class="fas fa-file-import"></i> Importuj fiszki</h3>
+                        <p>Dodaj nowe zestawy fiszek z plików TXT</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Moje zestawy -->
+            <div class="section" id="decks">
+                <div class="section-header">
+                    <h2 class="section-title">Moje zestawy</h2>
+                    <div>
+                        <button class="btn btn-outline" onclick="showSection('mainMenu')">
+                            <i class="fas fa-arrow-left"></i> Wstecz
+                        </button>
+                        <button class="btn btn-outline" onclick="showSortOptions()">
+                            <i class="fas fa-sort"></i> Sortuj
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Opcje sortowania -->
+                <div id="sortOptions" class="sort-options" style="display: none;">
+                    <button class="btn btn-outline" onclick="sortTopics('deadline')">
+                        <i class="fas fa-clock"></i> Według deadline
+                    </button>
+                    <button class="btn btn-outline" onclick="sortTopics('alphabetical')">
+                        <i class="fas fa-sort-alpha-down"></i> Alfabetycznie
+                    </button>
+                    <button class="btn btn-outline" onclick="sortTopics('flashcards')">
+                        <i class="fas fa-list-ol"></i> Według ilości fiszek
+                    </button>
+                </div>
+                
+                <div id="decksContainer">
+                    <!-- Zestawy zostaną załadowane dynamicznie -->
+                </div>
+            </div>
+
+            <!-- Nauka -->
+            <div class="section" id="study">
+                <div class="section-header">
+                    <h2 class="section-title" id="studyTitle">Nauka</h2>
+                    <div>
+                        <button class="btn btn-outline" onclick="toggleStudyMode()" id="studyModeToggle">
+                            <i class="fas fa-filter"></i> Tylko do nauki
+                        </button>
+                        <button class="btn btn-outline" onclick="toggleAdvancedFilters()" id="advancedFiltersToggle">
+                            <i class="fas fa-sliders-h"></i> Filtry
+                        </button>
+                        <button class="btn btn-outline" onclick="showSection('mainMenu')">
+                            <i class="fas fa-arrow-left"></i> Wstecz
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Zaawansowane filtry -->
+                <div class="advanced-filters" id="advancedFilters" style="display: none;">
+                    <h4>Filtruj fiszki:</h4>
+                    <div class="filter-options">
+                        <label class="filter-checkbox">
+                            <input type="checkbox" id="filterNew" checked> 
+                            <span class="filter-badge level-new">Nowe</span>
+                        </label>
+                        <label class="filter-checkbox">
+                            <input type="checkbox" id="filterLearning" checked> 
+                            <span class="filter-badge level-learning">Uczę się</span>
+                        </label>
+                        <label class="filter-checkbox">
+                            <input type="checkbox" id="filterAlmost" checked> 
+                            <span class="filter-badge level-almost">Prawie umiem</span>
+                        </label>
+                        <label class="filter-checkbox">
+                            <input type="checkbox" id="filterMastered"> 
+                            <span class="filter-badge level-mastered">Umiem</span>
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" onclick="applyAdvancedFilters()">Zastosuj filtry</button>
+                </div>
+                
+                <!-- Kontener na informacje o deadline -->
+                <div id="deadlineInfo"></div>
+                
+                <!-- Statystyki nauki -->
+                <div id="studyStats"></div>
+                
+                <div class="flashcard" id="flashcard" onclick="flipCard()">
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <div class="flashcard-word" id="flashcardFront">Wybierz zestaw do nauki</div>
+                            <div class="flashcard-hint">Kliknij, aby obrócić</div>
+                        </div>
+                        <div class="flashcard-back">
+                            <div class="flashcard-word" id="flashcardBack">Fiszkownica</div>
+                            <div class="flashcard-hint">Oceń swoją znajomość</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress" id="progressBar" style="width: 0%;"></div>
+                </div>
+                
+                <div class="knowledge-levels">
+                    <div class="knowledge-btn knowledge-new" onclick="setKnowledgeLevel('new')">
+                        <i class="fas fa-plus-circle"></i> Nowe
+                    </div>
+                    <div class="knowledge-btn knowledge-learning" onclick="setKnowledgeLevel('learning')">
+                        <i class="fas fa-book"></i> Uczę się
+                    </div>
+                    <div class="knowledge-btn knowledge-almost" onclick="setKnowledgeLevel('almost')">
+                        <i class="fas fa-check-circle"></i> Prawie umiem
+                    </div>
+                    <div class="knowledge-btn knowledge-mastered" onclick="setKnowledgeLevel('mastered')">
+                        <i class="fas fa-star"></i> Umiem
+                    </div>
+                </div>
+                
+                <div class="flashcard-controls">
+                    <button class="btn btn-outline" onclick="prevCard()">
+                        <i class="fas fa-arrow-left"></i> Poprzednia
+                    </button>
+                    <button class="btn btn-primary" onclick="nextCard()">
+                        Następna <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+
+                <div class="study-mode-selector">
+                    <button class="btn btn-outline" onclick="selectDeck()">
+                        <i class="fas fa-folder-open"></i> Wybierz zestaw
+                    </button>
+                </div>
+            </div>
+
+            <!-- Test -->
+            <div class="section" id="test">
+                <div class="section-header">
+                    <h2 class="section-title" id="testTitle">Test</h2>
+                    <button class="btn btn-outline" onclick="showSection('mainMenu')">
+                        <i class="fas fa-arrow-left"></i> Wstecz
+                    </button>
+                </div>
+                
+                <div class="test-settings">
+                    <div class="test-mode-selector">
+                        <button class="btn btn-outline" onclick="setTestMode('writing')">Pisanie</button>
+                        <button class="btn btn-outline" onclick="setTestMode('multiple')">Wielokrotny wybór</button>
+                        <button class="btn btn-outline" onclick="setTestMode('truefalse')">Prawda/Fałsz</button>
+                    </div>
+
+                    <div class="test-language-selector">
+                        <label>Język pytania:</label>
+                        <select id="testLanguage" onchange="changeTestLanguage()">
+                            <option value="polish">Polski → Angielski</option>
+                            <option value="english">Angielski → Polski</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-outline" onclick="toggleTestStudyMode()" id="testStudyModeToggle">
+                        <i class="fas fa-filter"></i> Tylko do nauki
+                    </button>
+                </div>
+                
+                <div class="test-deck-selector">
+                    <button class="btn btn-outline" onclick="showTestTopicSelection()">
+                        <i class="fas fa-folder-open"></i> Wybierz zestaw
+                    </button>
+                </div>
+                
+                <div id="testTopicSelection" style="display: none;">
+                    <h3>Wybierz temat do testu:</h3>
+                    <div id="testTopicsContainer">
+                        <!-- Tematy będą dodane dynamicznie -->
+                    </div>
+                </div>
+                
+                <div class="test-container" id="writingTest" style="display: none;">
+                    <div class="test-question" id="writingQuestion">Wybierz zestaw do testu</div>
+                    <div class="test-level-badge" id="writingLevel"></div>
+                    <input type="text" class="test-answer" id="writingAnswer" placeholder="Wpisz tłumaczenie...">
+                    <button class="btn btn-primary" style="width: 100%;" onclick="checkWritingAnswer()">Sprawdź</button>
+                    <div class="test-feedback" id="writingFeedback"></div>
+                </div>
+                
+                <div class="test-container" id="multipleTest" style="display: none;">
+                    <div class="test-question" id="multipleQuestion">Wybierz zestaw do testu</div>
+                    <div class="test-level-badge" id="multipleLevel"></div>
+                    <div class="test-options" id="multipleOptions">
+                        <div class="test-option" onclick="selectMultipleOption(0)">Opcja 1</div>
+                        <div class="test-option" onclick="selectMultipleOption(1)">Opcja 2</div>
+                        <div class="test-option" onclick="selectMultipleOption(2)">Opcja 3</div>
+                        <div class="test-option" onclick="selectMultipleOption(3)">Opcja 4</div>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="checkMultipleAnswer()">Sprawdź</button>
+                    <div class="test-feedback" id="multipleFeedback"></div>
+                </div>
+                
+                <div class="test-container" id="truefalseTest" style="display: none;">
+                    <div class="test-question" id="truefalseQuestion">Wybierz zestaw do testu</div>
+                    <div class="test-level-badge" id="truefalseLevel"></div>
+                    <div class="test-tf-options">
+                        <div class="test-tf-option true" onclick="selectTrueFalse(true)">Prawda</div>
+                        <div class="test-tf-option false" onclick="selectTrueFalse(false)">Fałsz</div>
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%;" onclick="checkTrueFalseAnswer()">Sprawdź</button>
+                    <div class="test-feedback" id="truefalseFeedback"></div>
+                </div>
+
+                <div class="test-result" id="testResult" style="display: none;">
+                    <h3>Wynik testu</h3>
+                    <p>Poprawne odpowiedzi: <span id="correctAnswers">0</span>/<span id="totalQuestions">0</span></p>
+                    <div id="incorrectAnswersList" style="display: none; margin-top: 1rem;">
+                        <h4>Błędne odpowiedzi:</h4>
+                        <div id="incorrectAnswersContainer"></div>
+                        <button class="btn btn-primary" onclick="reviewIncorrectAnswers()" style="margin-top: 1rem;">Popraw błędne odpowiedzi</button>
+                    </div>
+                    <button class="btn btn-outline" style="margin-top: 1rem;" onclick="resetTest()">Rozpocznij nowy test</button>
+                </div>
+            </div>
+
+            <!-- Statystyki -->
+            <div class="section" id="stats">
+                <div class="section-header">
+                    <h2 class="section-title">Twoje statystyki</h2>
+                    <button class="btn btn-outline" onclick="showSection('mainMenu')">
+                        <i class="fas fa-arrow-left"></i> Wstecz
+                    </button>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalFlashcards">0</div>
+                        <div class="stat-label">Fiszek</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="masteredFlashcards">0</div>
+                        <div class="stat-label">Opanowane</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="learningFlashcards">0</div>
+                        <div class="stat-label">W trakcie</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="newFlashcards">0</div>
+                        <div class="stat-label">Do nauki</div>
+                    </div>
+                </div>
+                
+                <div class="menu-card">
+                    <h3><i class="fas fa-fire"></i> Dzisiejsza aktywność</h3>
+                    <p id="todayActivity">Przećwiczyłeś 0 fiszek przez 0 minut</p>
+                </div>
+                
+                <div class="menu-card">
+                    <h3><i class="fas fa-calendar"></i> Twoja seria</h3>
+                    <p id="learningStreak">Uczysz się codziennie od 0 dni z rzędu!</p>
+                </div>
+                
+                <div class="menu-card">
+                    <h3><i class="fas fa-trophy"></i> Osiągnięcia</h3>
+                    <div id="achievementsList">
+                        <div class="achievement locked">
+                            <i class="fas fa-lock"></i>
+                            <span>Opanuj 100 fiszek</span>
+                        </div>
+                        <div class="achievement locked">
+                            <i class="fas fa-lock"></i>
+                            <span>7 dni z rzędu</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import -->
+            <div class="section" id="import">
+                <div class="section-header">
+                    <h2 class="section-title">Importuj fiszki</h2>
+                    <button class="btn btn-outline" onclick="showSection('mainMenu')">
+                        <i class="fas fa-arrow-left"></i> Wstecz
+                    </button>
+                </div>
+                
+                <div class="menu-card">
+                    <h3><i class="fas fa-info-circle"></i> Instrukcja</h3>
+                    <p>Przygotuj plik TXT w formacie: "polskie słowo - angielskie słowo". Każda para w osobnej linii.</p>
+                </div>
+                
+                <div class="file-upload" id="fileUpload">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Kliknij lub upuść plik tutaj, aby zaimportować</p>
+                    <input type="file" id="fileInput" accept=".txt" style="display: none;">
+                </div>
+                
+                <div class="menu-card">
+                    <h3><i class="fas fa-folder-plus"></i> Utwórz nowy dział</h3>
+                    <input type="text" class="test-answer" id="newDeckName" placeholder="Nazwa działu" style="margin-bottom: 1rem;">
+                    <input type="text" class="test-answer" id="newTopicName" placeholder="Nazwa tematu">
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="createNewDeck()">Utwórz</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal do ustawiania deadline -->
+    <div class="modal" id="deadlineModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Ustaw deadline</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modalDescription">Wybierz datę deadline:</p>
+                <input type="date" id="deadlineDate" class="modal-input">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">Anuluj</button>
+                <button class="btn btn-primary" onclick="saveDeadline()">Zapisz</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kontener na notyfikacje -->
+    <div id="notificationsContainer"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>

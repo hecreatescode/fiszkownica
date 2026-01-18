@@ -1,0 +1,23 @@
+[
+  { "polish": "poddasze, strych", "english": "attic" },
+  { "polish": "balkon", "english": "balcony" },
+  { "polish": "piwnica", "english": "basement" },
+  { "polish": "sufit", "english": "ceiling" },
+  { "polish": "piwnica", "english": "cellar" },
+  { "polish": "komin", "english": "chimney" },
+  { "polish": "podjazd", "english": "drive" },
+  { "polish": "podłoga, piętro", "english": "floor" },
+  { "polish": "garaż", "english": "garage" },
+  { "polish": "ogród", "english": "garden" },
+  { "polish": "winda", "english": "lift" },
+  { "polish": "na pierwszym piętrze", "english": "on the first floor" },
+  { "polish": "na parterze", "english": "on the ground floor" },
+  { "polish": "dach", "english": "roof" },
+  { "polish": "pokój", "english": "room" },
+  { "polish": "okiennice", "english": "shutters" },
+  { "polish": "klatka schodowa", "english": "staircase" },
+  { "polish": "schody", "english": "stairs" },
+  { "polish": "kondygnacja, piętro", "english": "storey" },
+  { "polish": "dziesięciopiętrowy budynek", "english": "ten-storey building" },
+  { "polish": "taras", "english": "terrace" }
+]

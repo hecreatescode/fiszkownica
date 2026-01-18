@@ -1,0 +1,14 @@
+[
+  { "polish": "krzesło", "english": "chair" },
+  { "polish": "kuchenka", "english": "cooker" },
+  { "polish": "szafka kuchenna", "english": "kitchen cupboard" },
+  { "polish": "zmywarka", "english": "dishwasher" },
+  { "polish": "lodówka", "english": "refrigerator" },
+  { "polish": "lodówka", "english": "fridge" },
+  { "polish": "czajnik", "english": "kettle" },
+  { "polish": "kuchnia", "english": "kitchen" },
+  { "polish": "kuchenka mikrofalowa", "english": "microwave" },
+  { "polish": "piekarnik", "english": "oven" },
+  { "polish": "kosz na śmieci", "english": "rubbish bin" },
+  { "polish": "zlew", "english": "sink" }
+]

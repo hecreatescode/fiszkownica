@@ -1,0 +1,18 @@
+[
+  { "polish": "mieszkanie", "english": "apartment" },
+  { "polish": "blok mieszkalny", "english": "block of flats" },
+  { "polish": "dom parterowy", "english": "bungalow" },
+  { "polish": "domek wiejski", "english": "cottage" },
+  { "polish": "dom wolnostojący", "english": "detached house" },
+  { "polish": "mieszkanie", "english": "flat" },
+  { "polish": "dwór", "english": "mansion" },
+  { "polish": "pałac", "english": "palace" },
+  { "polish": "rezydencja", "english": "residence" },
+  { "polish": "dom bliźniak", "english": "semi-detached house" },
+  { "polish": "drapacz chmur", "english": "skyscraper" },
+  { "polish": "kawalerka", "english": "studio apartment" },
+  { "polish": "dom w zabudowie szeregowej, segment", "english": "terraced house" },
+  { "polish": "mieszkanie na ostatnim piętrze", "english": "top floor flat" },
+  { "polish": "wieżowiec", "english": "tower block" },
+  { "polish": "willa", "english": "villa" }
+]
