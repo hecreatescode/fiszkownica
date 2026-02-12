@@ -30,6 +30,8 @@
 
 ## 🚀 Jak uruchomić
 
+Aplikacja jest dostępna online pod adresem: **[https://hecreatescode.github.io/fiszkownica/](https://hecreatescode.github.io/fiszkownica/)**
+
 Ponieważ jest to statyczna aplikacja webowa, nie wymaga skomplikowanej instalacji backendu.
 
 1.  Sklonuj repozytorium lub pobierz pliki.
