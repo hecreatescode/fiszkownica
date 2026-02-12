@@ -1,0 +1,1 @@
+***plik README w trakcie sporządzania***

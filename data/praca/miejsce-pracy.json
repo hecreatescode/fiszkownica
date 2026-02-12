@@ -1,0 +1,16 @@
+[
+    {"polish": "plac budowy", "english": "building site"},
+    {"polish": "infolinia", "english": "call centre"},
+    {"polish": "korporacja", "english": "corporation"},
+    {"polish": "dom towarowy", "english": "department store"},
+    {"polish": "fabryka", "english": "factory"},
+    {"polish": "klub fitness", "english": "fitness club"},
+    {"polish": "warsztat samochodowy", "english": "garage"},
+    {"polish": "domowe biuro", "english": "home office"},
+    {"polish": "biuro", "english": "office"},
+    {"polish": "giełda papierów wartościowych", "english": "stock exchange"},
+    {"polish": "magazyn", "english": "warehouse"},
+    {"polish": "pracować z domu", "english": "work from home"},
+    {"polish": "pracować w handlu detalicznym", "english": "work in retail"},
+    {"polish": "pracować zdalnie", "english": "work remotely"}
+]

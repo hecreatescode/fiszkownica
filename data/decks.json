@@ -301,6 +301,36 @@
           "id": "wybor-zawodu-1",
           "name": "Wybór zawodu i poszukiwanie pracy cz. 1",
           "file": "wybor-zawodu-1.json"
+        },
+        {
+          "id": "wybor-zawodu-2",
+          "name": "Wybór zawodu i poszukiwanie pracy cz. 2",
+          "file": "wybor-zawodu-2.json"
+        },
+        {
+            "id": "miejsce-pracy",
+            "name": "Miejsce pracy",
+            "file": "miejsce-pracy.json"
+        },
+        {
+          "id": "warunki-pracy",
+          "name": "Warunki pracy i zatrudnienia",
+          "file": "warunki-pracy.json"
+        },
+        {
+          "id": "brak-pracy",
+          "name": "Brak pracy",
+          "file": "brak-pracy.json"
+        },
+        {
+          "id": "wordpower-51",
+          "name": "Wordpower s. 51",
+          "file": "wordpower-51.json"
+        },
+        {
+          "id": "wyrazenia-praca",
+          "name": "Wyrażenia związane z pracą",
+          "file": "wyrazenia-praca.json"
         }
       ]
     }

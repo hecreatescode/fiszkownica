@@ -1,4 +1,7 @@
-// Główne zmienne aplikacji
+// Fiszkownica - Główny plik JavaScript
+// Wersja: 1.0.1
+
+// ==================== GŁÓWNE ZMIENNE APLIKACJI ====================
 let currentDeck = null;
 let currentTopic = null;
 let currentFlashcards = [];
@@ -25,104 +28,272 @@ let studyMode = 'all';
 let originalFlashcards = [];
 let testStudyMode = 'all';
 let appData = { decks: [] };
+let testStartTime = null;
+let testEndTime = null;
+let selectedTopicsForTest = new Set();
 
-// System powtórek spaced repetition
+// Licznik testu
+let testCounter = {
+    current: 0,
+    total: 0,
+    correct: 0,
+    incorrect: 0
+};
+
+// System spaced repetition
 let spacedRepetitionIntervals = {
-    'new': 1,      // 1 dzień
-    'learning': 3, // 3 dni
-    'almost': 7,   // 7 dni
-    'mastered': 30 // 30 dni
+    'new': 1,
+    'learning': 3,
+    'almost': 7,
+    'mastered': 30
 };
 
 // Osiągnięcia
 let achievements = {
-    firstMaster: { name: 'Pierwsze kroki', desc: 'Opanuj pierwszą fiszkę', unlocked: false },
-    streak7: { name: 'Konsekwentny', desc: '7 dni nauki z rzędu', unlocked: false },
-    master100: { name: 'Ekspert', desc: 'Opanuj 100 fiszek', unlocked: false },
-    quickLearner: { name: 'Szybki uczeń', desc: 'Opanuj 10 fiszek w jeden dzień', unlocked: false }
+    firstMaster: { name: 'Pierwsze kroki', desc: 'Opanuj pierwszą fiszkę', unlocked: false, icon: 'fas fa-star' },
+    streak7: { name: 'Konsekwentny', desc: '7 dni nauki z rzędu', unlocked: false, icon: 'fas fa-calendar-check' },
+    master100: { name: 'Ekspert', desc: 'Opanuj 100 fiszek', unlocked: false, icon: 'fas fa-trophy' },
+    quickLearner: { name: 'Szybki uczeń', desc: 'Opanuj 10 fiszek w jeden dzień', unlocked: false, icon: 'fas fa-bolt' },
+    perfectTest: { name: 'Perfekcjonista', desc: 'Zdaj test ze 100% skutecznością', unlocked: false, icon: 'fas fa-perfect' },
+    marathon: { name: 'Maratończyk', desc: 'Przećwicz 50 fiszek w jednej sesji', unlocked: false, icon: 'fas fa-running' },
+    earlyBird: { name: 'Ranny ptaszek', desc: 'Ucz się przez 7 dni z rzędu przed 9:00', unlocked: false, icon: 'fas fa-sun' },
+    polyglot: { name: 'Poliglota', desc: 'Opanuj fiszki z 5 różnych działów', unlocked: false, icon: 'fas fa-language' },
+    speedster: { name: 'Szybki jak błyskawica', desc: 'Odpowiedz na 10 pytań w mniej niż 30 sekund', unlocked: false, icon: 'fas fa-stopwatch' },
+    collector: { name: 'Kolekcjoner', desc: 'Posiadaj 500 fiszek w swojej kolekcji', unlocked: false, icon: 'fas fa-layer-group' }
 };
 
-// Inicjalizacja aplikacji
+// Zmienne loadera
+let loadingProgress = 0;
+let loadingInterval = null;
+let deferredPrompt = null;
+
+// ==================== INICJALIZACJA APLIKACJI ====================
 document.addEventListener('DOMContentLoaded', function() {
-    initApp();
+    startLoadingAnimation();
+    setupPWA();
+    setTimeout(() => initApp(), 500);
 });
 
+// ==================== FUNKCJE LOADERA ====================
+function startLoadingAnimation() {
+    const loader = document.getElementById('pageLoader');
+    const progressBar = document.getElementById('loaderProgress');
+    const statusText = document.getElementById('loaderStatus');
+    const percentageText = document.getElementById('loaderPercentage');
+    
+    if (!loader) return;
+    
+    loader.style.display = 'flex';
+    
+    loadingInterval = setInterval(() => {
+        if (loadingProgress < 90) {
+            loadingProgress += Math.random() * 10;
+            if (loadingProgress > 90) loadingProgress = 90;
+            
+            if (progressBar) progressBar.style.width = `${loadingProgress}%`;
+            if (percentageText) percentageText.textContent = `${Math.round(loadingProgress)}%`;
+            if (statusText) updateLoadingStatus(loadingProgress, statusText);
+        }
+    }, 200);
+}
+
+function updateLoadingStatus(progress, statusElement) {
+    if (progress < 20) statusElement.textContent = 'Inicjalizacja...';
+    else if (progress < 40) statusElement.textContent = 'Ładowanie danych...';
+    else if (progress < 60) statusElement.textContent = 'Przygotowywanie interfejsu...';
+    else if (progress < 80) statusElement.textContent = 'Ładowanie ustawień...';
+    else statusElement.textContent = 'Prawie gotowe...';
+}
+
+function finishLoadingAnimation() {
+    clearInterval(loadingInterval);
+    
+    const loader = document.getElementById('pageLoader');
+    const progressBar = document.getElementById('loaderProgress');
+    const percentageText = document.getElementById('loaderPercentage');
+    const statusText = document.getElementById('loaderStatus');
+    
+    if (!loader) return;
+    
+    loadingProgress = 100;
+    if (progressBar) progressBar.style.width = '100%';
+    if (percentageText) percentageText.textContent = '100%';
+    if (statusText) statusText.textContent = 'Gotowe!';
+    
+    setTimeout(() => {
+        loader.classList.add('hidden');
+        const appContainer = document.querySelector('.app-container');
+        if (appContainer) appContainer.style.opacity = '1';
+        
+        setTimeout(() => {
+            loader.style.display = 'none';
+        }, 500);
+    }, 1000);
+}
+
+function updateLoadingProgress(progress, status) {
+    loadingProgress = progress;
+    const progressBar = document.getElementById('loaderProgress');
+    const statusText = document.getElementById('loaderStatus');
+    const percentageText = document.getElementById('loaderPercentage');
+    
+    if (progressBar) progressBar.style.width = `${progress}%`;
+    if (statusText) statusText.textContent = status;
+    if (percentageText) percentageText.textContent = `${Math.round(progress)}%`;
+}
+
+// ==================== PWA FUNCTIONS ====================
+function setupPWA() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js')
+            .then(registration => {
+                console.log('Service Worker zarejestrowany:', registration);
+            })
+            .catch(error => {
+                console.log('Błąd rejestracji Service Worker:', error);
+            });
+    }
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        showInstallButton();
+    });
+    
+    window.addEventListener('appinstalled', () => {
+        hideInstallButton();
+        showNotification('Aplikacja została zainstalowana!', 'success');
+    });
+}
+
+function showInstallButton() {
+    const installButton = document.getElementById('installButton');
+    if (installButton) installButton.style.display = 'flex';
+}
+
+function hideInstallButton() {
+    const installButton = document.getElementById('installButton');
+    if (installButton) installButton.style.display = 'none';
+}
+
+function showInstallPrompt() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('Użytkownik zaakceptował instalację');
+            }
+            deferredPrompt = null;
+            hideInstallButton();
+        });
+    }
+}
+
+// ==================== GŁÓWNA INICJALIZACJA ====================
 async function initApp() {
     try {
+        updateLoadingProgress(10, 'Ładowanie ustawień...');
         await loadAppData();
+        updateLoadingProgress(30, 'Ładowanie postępów...');
         loadUserProgress();
+        updateLoadingProgress(50, 'Przygotowywanie interfejsu...');
         setupEventListeners();
+        updateLoadingProgress(70, 'Ładowanie zestawów...');
         loadDecks();
+        updateLoadingProgress(90, 'Aktualizacja statystyk...');
         updateStats();
         updateQuickStats();
         checkAchievements();
         
-        // Przywróć tryb ciemny jeśli był zapisany
         if (localStorage.getItem('darkMode') === 'true') {
             document.body.classList.add('dark-mode');
-            document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
+            document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i> <span class="btn-text">Motyw</span>';
         }
         
-        showNotification('Aplikacja została załadowana pomyślnie!', 'success');
+        updateLoadingProgress(95, 'Finalizowanie...');
+        
+        setTimeout(() => {
+            finishLoadingAnimation();
+            showNotification('Aplikacja została załadowana pomyślnie!', 'success');
+        }, 500);
+        
     } catch (error) {
         handleError(error, 'initApp');
+        finishLoadingAnimation();
         showNotification('Wystąpił błąd podczas ładowania aplikacji', 'error');
     }
 }
 
-// Ładowanie danych aplikacji z plików JSON
+// ==================== ŁADOWANIE DANYCH ====================
 async function loadAppData() {
     try {
-        // Ładujemy strukturę decków
-        const decksResponse = await fetch('./data/decks.json');
-        const decksStructure = await decksResponse.json();
+        updateLoadingProgress(15, 'Ładowanie struktury działów...');
+        const response = await fetch('data/decks.json');
+        const data = await response.json();
         
-        appData.decks = [];
+        console.log('Pobrane dane z decks.json:', data);
         
-        // Dla każdego decku ładujemy jego tematy
-        for (const deckInfo of decksStructure.decks) {
-            const deck = {
-                id: deckInfo.id,
-                name: deckInfo.name,
-                topics: []
-            };
-            
-            // Ładujemy tematy dla tego decku
-            for (const topicInfo of deckInfo.topics) {
-                try {
-                    const topicResponse = await fetch(`./data/${deckInfo.id}/${topicInfo.file}`);
-                    const flashcards = await topicResponse.json();
-                    
-                    deck.topics.push({
-                        id: topicInfo.id,
-                        name: topicInfo.name,
-                        flashcards: flashcards
-                    });
-                } catch (error) {
-                    console.error(`Błąd ładowania tematu ${topicInfo.file}:`, error);
-                    showNotification(`Błąd ładowania tematu: ${topicInfo.name}`, 'error');
-                }
-            }
-            
-            appData.decks.push(deck);
+        if (!data || !Array.isArray(data.decks)) {
+            console.error('data.decks nie jest tablicą!', data);
+            appData.decks = [];
+            return true;
         }
         
-        console.log('Dane aplikacji załadowane pomyślnie', appData);
+        // Ustaw decks bezpośrednio z decks.json
+        appData.decks = data.decks.map(deck => ({
+            ...deck,
+            topics: Array.isArray(deck.topics) ? deck.topics.map(topic => ({
+                ...topic,
+                flashcards: [] // Flashcards będą ładowane na żądanie
+            })) : []
+        }));
+        
+        console.log('appData.decks po mapowaniu:', appData.decks);
+        
+        updateLoadingProgress(25, 'Przetwarzanie danych...');
+        console.log('Dane aplikacji załadowane pomyślnie');
+        return true;
     } catch (error) {
-        console.error('Błąd ładowania danych aplikacji:', error);
-        // Fallback - puste dane
+        console.error('Błąd ładowania danych:', error);
         appData.decks = [];
         throw error;
     }
 }
 
-// Ładowanie postępów użytkownika z localStorage
 function loadUserProgress() {
-    const savedProgress = localStorage.getItem('fiszkownicaProgress');
-    if (savedProgress) {
-        userProgress = JSON.parse(savedProgress);
-    } else {
-        // Inicjalizacja pustych postępów
+    try {
+        const savedProgress = localStorage.getItem('fiszkownicaProgress');
+        if (savedProgress) {
+            userProgress = JSON.parse(savedProgress);
+        } else {
+            userProgress = {
+                decks: {},
+                stats: {
+                    total: 0,
+                    mastered: 0,
+                    learning: 0,
+                    new: 0,
+                    today: { count: 0, study: 0, test: 0, review: 0 },
+                    streak: 0,
+                    lastStudyDate: null,
+                    totalStudyTime: 0
+                },
+                deadlines: {},
+                spacedRepetition: {},
+                achievements: {},
+                activityLog: []
+            };
+            saveUserProgress();
+        }
+        
+        if (!userProgress.achievements) userProgress.achievements = {};
+        if (!userProgress.activityLog) userProgress.activityLog = [];
+        
+        console.log('Postępy załadowane pomyślnie');
+        return true;
+        
+    } catch (error) {
+        console.error('Błąd ładowania postępów:', error);
         userProgress = {
             decks: {},
             stats: {
@@ -130,307 +301,492 @@ function loadUserProgress() {
                 mastered: 0,
                 learning: 0,
                 new: 0,
-                today: { count: 0, time: 0 },
+                today: { count: 0, study: 0, test: 0, review: 0 },
                 streak: 0,
-                lastStudyDate: null
+                lastStudyDate: null,
+                totalStudyTime: 0
             },
             deadlines: {},
             spacedRepetition: {},
-            achievements: {}
+            achievements: {},
+            activityLog: []
         };
-        saveUserProgress();
+        return false;
+    }
+}
+
+function saveUserProgress() {
+    try {
+        localStorage.setItem('fiszkownicaProgress', JSON.stringify(userProgress));
+        console.log('Postęp zapisany');
+        return true;
+    } catch (error) {
+        console.error('Błąd zapisywania postępu:', error);
+        showNotification('Błąd zapisywania postępu', 'error');
+        return false;
+    }
+}
+
+// ==================== LOGOWANIE AKTYWNOŚCI ====================
+function logActivity(type, details = {}) {
+    if (!userProgress.activityLog) userProgress.activityLog = [];
+    
+    const activity = {
+        timestamp: new Date().toISOString(),
+        type: type,
+        details: details
+    };
+    
+    userProgress.activityLog.unshift(activity);
+    
+    if (userProgress.activityLog.length > 100) {
+        userProgress.activityLog = userProgress.activityLog.slice(0, 100);
     }
     
-    // Inicjalizacja osiągnięć
-    if (!userProgress.achievements) {
-        userProgress.achievements = {};
+    const today = new Date().toDateString();
+    if (!userProgress.stats.today) {
+        userProgress.stats.today = { count: 0, study: 0, test: 0, review: 0 };
     }
+    
+    userProgress.stats.today.count++;
+    
+    switch(type) {
+        case 'study': userProgress.stats.today.study++; break;
+        case 'test': userProgress.stats.today.test++; break;
+        case 'review': userProgress.stats.today.review++; break;
+    }
+    
+    saveUserProgress();
+    updateStats();
 }
 
-// Zapisywanie postępów użytkownika
-function saveUserProgress() {
-    localStorage.setItem('fiszkownicaProgress', JSON.stringify(userProgress));
-}
-
-// Ustawienie nasłuchiwaczy zdarzeń
+// ==================== EVENT LISTENERS ====================
 function setupEventListeners() {
-    // Przełącznik trybu ciemnego
     const themeToggle = document.getElementById('themeToggle');
-    themeToggle.addEventListener('click', toggleDarkMode);
+    if (themeToggle) themeToggle.addEventListener('click', toggleDarkMode);
 
-    // Obsługa uploadu plików
     const fileUpload = document.getElementById('fileUpload');
     const fileInput = document.getElementById('fileInput');
     
-    fileUpload.addEventListener('click', () => {
-        fileInput.click();
-    });
+    if (fileUpload && fileInput) {
+        fileUpload.addEventListener('click', () => fileInput.click());
+        
+        fileUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUpload.style.borderColor = 'var(--primary)';
+            fileUpload.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
+        });
+        
+        fileUpload.addEventListener('dragleave', () => {
+            fileUpload.style.borderColor = '';
+            fileUpload.style.backgroundColor = '';
+        });
+        
+        fileUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUpload.style.borderColor = '';
+            fileUpload.style.backgroundColor = '';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileUpload({ target: fileInput });
+            }
+        });
+        
+        fileInput.addEventListener('change', handleFileUpload);
+    }
     
-    fileUpload.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        fileUpload.style.borderColor = 'var(--primary)';
-        fileUpload.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
-    });
-    
-    fileUpload.addEventListener('dragleave', () => {
-        fileUpload.style.borderColor = '';
-        fileUpload.style.backgroundColor = '';
-    });
-    
-    fileUpload.addEventListener('drop', (e) => {
-        e.preventDefault();
-        fileUpload.style.borderColor = '';
-        fileUpload.style.backgroundColor = '';
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            fileInput.files = files;
-            handleFileUpload({ target: fileInput });
-        }
-    });
-    
-    fileInput.addEventListener('change', handleFileUpload);
-    
-    // Obsługa klawisza Enter w testach
     document.addEventListener('keydown', handleTestEnterKey);
+    document.addEventListener('keydown', handleKeyboardNavigation);
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
 }
 
-// Przełączanie trybu ciemnego
+function handleKeyboardNavigation(event) {
+    if (event.code === 'Space' && document.getElementById('study').classList.contains('active')) {
+        event.preventDefault();
+        flipCard();
+    }
+    
+    if (event.code === 'ArrowRight' && document.getElementById('study').classList.contains('active')) {
+        event.preventDefault();
+        nextCard();
+    }
+    
+    if (event.code === 'ArrowLeft' && document.getElementById('study').classList.contains('active')) {
+        event.preventDefault();
+        prevCard();
+    }
+    
+    if (event.code >= 'Digit1' && event.code <= 'Digit4' && document.getElementById('study').classList.contains('active')) {
+        event.preventDefault();
+        const levels = ['new', 'learning', 'almost', 'mastered'];
+        const levelIndex = parseInt(event.code.replace('Digit', '')) - 1;
+        if (levels[levelIndex]) setKnowledgeLevel(levels[levelIndex]);
+    }
+    
+    if (event.code === 'Escape') {
+        closeModal();
+        closeAboutModal();
+        closeHelpModal();
+    }
+}
+
+function handleTestEnterKey(event) {
+    const testSection = document.getElementById('test');
+    if (!testSection || !testSection.classList.contains('active')) return;
+    
+    if (event.key !== 'Enter') return;
+    
+    event.preventDefault();
+    
+    if (testMode === 'writing') {
+        checkWritingAnswer();
+    } else if (testMode === 'multiple') {
+        checkMultipleAnswer();
+    } else if (testMode === 'truefalse') {
+        checkTrueFalseAnswer();
+    }
+}
+
+function updateOnlineStatus() {
+    if (navigator.onLine) {
+        showNotification('Połączenie z internetem przywrócone', 'success');
+    } else {
+        showNotification('Brak połączenia z internetem. Tryb offline.', 'error');
+    }
+}
+
+// ==================== DARK MODE ====================
 function toggleDarkMode() {
     document.body.classList.toggle('dark-mode');
     const themeToggle = document.getElementById('themeToggle');
     if (document.body.classList.contains('dark-mode')) {
-        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        themeToggle.innerHTML = '<i class="fas fa-sun"></i> <span class="btn-text">Motyw</span>';
         localStorage.setItem('darkMode', 'true');
     } else {
-        themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+        themeToggle.innerHTML = '<i class="fas fa-moon"></i> <span class="btn-text">Motyw</span>';
         localStorage.setItem('darkMode', 'false');
     }
 }
 
-// Pokaż/ukryj opcje sortowania
+// ==================== ZESTAWY FISZEK ====================
 function showSortOptions() {
     const sortOptions = document.getElementById('sortOptions');
-    sortOptions.style.display = sortOptions.style.display === 'none' ? 'flex' : 'none';
+    if (sortOptions) {
+        sortOptions.style.display = sortOptions.style.display === 'none' ? 'flex' : 'none';
+    }
 }
 
-// Sortowanie tematów
 function sortTopics(method) {
     currentSortMethod = method;
     loadDecks();
 }
 
-// Ładowanie zestawów fiszek z uwzględnieniem sortowania
-function loadDecks() {
+function filterDecks() {
+    const searchTerm = document.getElementById('deckSearch').value.toLowerCase();
+    const deckItems = document.querySelectorAll('.deck-item');
+    
+    deckItems.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+    });
+}
+
+function refreshDecks() {
     const decksContainer = document.getElementById('decksContainer');
-    if (!decksContainer) return;
+    if (decksContainer) {
+        decksContainer.innerHTML = `
+            <div class="loading-decks">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Odświeżanie zestawów...</p>
+            </div>
+        `;
+        
+        setTimeout(() => {
+            loadDecks();
+            showNotification('Zestawy zostały odświeżone', 'success');
+        }, 500);
+    }
+}
+
+function loadDecks() {
+    console.log('loadDecks: appData=', appData);
+    console.log('loadDecks: Array.isArray(appData.decks)=', Array.isArray(appData.decks));
+    
+    const decksContainer = document.getElementById('decksContainer');
+    const totalDecks = document.getElementById('totalDecks');
+    const totalTopics = document.getElementById('totalTopics');
+    const totalFlashcardsDeck = document.getElementById('totalFlashcardsDeck');
+    const overallProgress = document.getElementById('overallProgress');
+    
+    if (!decksContainer) {
+        console.error('loadDecks: decksContainer nie znaleziony');
+        return;
+    }
+    
+    if (!appData || !Array.isArray(appData.decks)) {
+        console.error('loadDecks: appData.decks nie jest tablicą!', appData);
+        decksContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Błąd ładowania zestawów</h3>
+                <p>Nie udało się załadować danych. appData.decks nie istnieje lub nie jest tablicą.</p>
+                <button class="btn btn-primary" onclick="location.reload()">
+                    <i class="fas fa-sync-alt"></i> Odśwież stronę
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    let deckCount = 0;
+    let topicCount = 0;
+    let flashcardCount = 0;
+    let masteredCount = 0;
+    
+    if (Array.isArray(appData.decks)) {
+        appData.decks.forEach(deck => {
+            if (!deck || typeof deck !== 'object') return;
+            deckCount++;
+            const topics = Array.isArray(deck.topics) ? deck.topics : [];
+            topicCount += topics.length;
+            topics.forEach(topic => {
+                if (!topic || typeof topic !== 'object') return;
+                const flashcardsLength = Array.isArray(topic.flashcards) ? topic.flashcards.length : 0;
+                flashcardCount += flashcardsLength;
+                if (userProgress && userProgress.decks && userProgress.decks[deck.id] && userProgress.decks[deck.id][topic.id]) {
+                    const topicProgress = userProgress.decks[deck.id][topic.id];
+                    if (topicProgress && typeof topicProgress === 'object') {
+                        const values = Object.values(topicProgress);
+                        if (Array.isArray(values)) {
+                            values.forEach(level => {
+                                if (level === 'mastered') masteredCount++;
+                            });
+                        }
+                    }
+                }
+            });
+        });
+    }
+    
+    if (totalDecks) totalDecks.textContent = deckCount;
+    if (totalTopics) totalTopics.textContent = topicCount;
+    if (totalFlashcardsDeck) totalFlashcardsDeck.textContent = flashcardCount;
+    if (overallProgress) {
+        const progress = flashcardCount > 0 ? Math.round((masteredCount / flashcardCount) * 100) : 0;
+        overallProgress.textContent = `${progress}%`;
+    }
     
     decksContainer.innerHTML = '';
-
-    appData.decks.forEach(deck => {
-        // Oblicz całkowitą liczbę fiszek w dziale
-        const totalFlashcards = deck.topics.reduce((total, topic) => total + topic.flashcards.length, 0);
-        
-        const deckElement = document.createElement('div');
-        deckElement.className = 'menu-card';
-        
-        // Sprawdź czy są deadline'y dla tego działu
-        const deadlineInfo = getDeadlineInfo(deck.id);
-        
-        // Przygotuj tematy do wyświetlenia (z sortowaniem)
-        let topicsToDisplay = [...deck.topics];
-        
-        if (currentSortMethod === 'deadline') {
-            topicsToDisplay.sort((a, b) => {
-                const deadlineA = getDeadlineInfo(deck.id, a.id);
-                const deadlineB = getDeadlineInfo(deck.id, b.id);
-                
-                if (!deadlineA && !deadlineB) return 0;
-                if (!deadlineA) return 1;
-                if (!deadlineB) return -1;
-                
-                return new Date(deadlineA.date) - new Date(deadlineB.date);
-            });
-        } else if (currentSortMethod === 'alphabetical') {
-            topicsToDisplay.sort((a, b) => a.name.localeCompare(b.name));
-        } else if (currentSortMethod === 'flashcards') {
-            topicsToDisplay.sort((a, b) => b.flashcards.length - a.flashcards.length);
-        }
-        
-        deckElement.innerHTML = `
-            <div class="deck-header">
-                <div>
-                    <h3><i class="fas fa-folder"></i> ${deck.name}</h3>
-                    <span>${deck.topics.length} tematów, ${totalFlashcards} fiszek</span>
-                </div>
-                ${deadlineInfo ? `
-                    <div class="deadline-badge ${deadlineInfo.colorClass}">
-                        <i class="fas fa-calendar-day"></i> 
-                        <span>${deadlineInfo.text}</span>
-                    </div>
-                ` : ''}
+    
+    if (appData.decks.length === 0) {
+        decksContainer.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-folder-open"></i>
+                <h3>Brak zestawów</h3>
+                <p>Dodaj swoje pierwsze fiszki w sekcji Import</p>
+                <button class="btn btn-primary" onclick="showSection('import')">
+                    <i class="fas fa-plus"></i> Dodaj fiszki
+                </button>
             </div>
-            <div class="deck-topics">
-                ${topicsToDisplay.map(topic => {
+        `;
+        return;
+    }
+    
+    appData.decks.forEach((deck, i) => {
+        if (!deck || typeof deck !== 'object') return;
+        const deckElement = document.createElement('div');
+        deckElement.className = 'deck-item';
+        const deckStats = calculateDeckStats(deck);
+        const deadlineInfo = getDeadlineInfo(deck.id);
+        const topicsLength = Array.isArray(deck.topics) ? deck.topics.length : 0;
+        const deckId = `deck-accordion-${i}`;
+        deckElement.innerHTML = `
+            <div class="deck-main-content">
+                <div class="deck-header" onclick="toggleAccordion('${deckId}')">
+                    <div class="deck-title-group">
+                        <div class="deck-icon-box"><i class="${deck.icon || 'fas fa-folder'}"></i></div>
+                        <div>
+                            <h3>${deck.name || 'Bez nazwy'}</h3>
+                            <p class="deck-desc-short">${deck.description || 'Zestaw fiszek'}</p>
+                        </div>
+                    </div>
+                    <div class="deck-arrow" id="${deckId}-arrow"><i class="fas fa-chevron-down"></i></div>
+                </div>
+                
+                <div class="deck-stats-row">
+                    <div class="d-stat"><i class="fas fa-tags"></i> ${topicsLength} tematy</div>
+                    <div class="d-stat"><i class="fas fa-layer-group"></i> ${deckStats.total} fiszki</div>
+                    <div class="d-stat highlight"><i class="fas fa-chart-pie"></i> ${deckStats.progress}%</div>
+                    ${deadlineInfo ? `<div class="d-stat deadline ${deadlineInfo.colorClass}"><i class="fas fa-clock"></i> ${deadlineInfo.text}</div>` : ''}
+                </div>
+
+                <div class="deck-topics-container" id="${deckId}" style="display:none;">
+                    ${(Array.isArray(deck.topics) ? deck.topics : []).map(topic => {
+                    if (!topic || typeof topic !== 'object') return '';
+                    const flashcardsLength = Array.isArray(topic.flashcards) ? topic.flashcards.length : 0;
+                    const topicStats = calculateTopicStats(deck.id, topic.id, flashcardsLength);
                     const topicDeadlineInfo = getDeadlineInfo(deck.id, topic.id);
                     return `
                         <div class="topic-item" onclick="selectTopic('${deck.id}', '${topic.id}')">
-                            <div>${topic.name}</div>
-                            <div class="topic-details">
-                                <small>${topic.flashcards.length} fiszek</small>
-                                ${topicDeadlineInfo ? `
-                                    <small class="deadline-small ${topicDeadlineInfo.colorClass}">
-                                        <i class="fas fa-clock"></i> ${topicDeadlineInfo.text}
-                                    </small>
-                                ` : ''}
+                            <div class="topic-header">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <i class="fas fa-tag" style="color:var(--primary);"></i>
+                                    <span class="topic-name">${topic.name}</span>
+                                </div>
+                                <span class="topic-flashcards badge">${flashcardsLength} fiszek</span>
                             </div>
+                            <div class="topic-meta">
+                                <div class="progress-bar small" style="flex-grow:1;">
+                                    <div class="progress" style="width: ${topicStats.progress}%"></div>
+                                </div>
+                                <span class="progress-text">${topicStats.progress}%</span>
+                            </div>
+                            ${topicDeadlineInfo ? `<div class="topic-deadline ${topicDeadlineInfo.colorClass}"><i class="fas fa-clock"></i><span>${topicDeadlineInfo.text}</span></div>` : ''}
                         </div>
                     `;
                 }).join('')}
+                </div>
             </div>
-            <div class="deck-actions">
-                <button class="btn btn-outline" onclick="setDeadline('${deck.id}')">
-                    <i class="fas fa-calendar-plus"></i> Ustaw deadline
-                </button>
+            
+            <div class="deck-actions-footer">
+                <button class="btn btn-outline btn-sm" onclick="setDeadline('${deck.id}')" title="Ustaw deadline"><i class="fas fa-calendar-alt"></i></button>
+                <button class="btn btn-outline btn-sm" onclick="studyDeck('${deck.id}')">Ucz się</button>
+                <button class="btn btn-primary btn-sm" onclick="startTestDeck('${deck.id}')">Test</button>
             </div>
         `;
         decksContainer.appendChild(deckElement);
     });
 }
 
-// Pobierz informacje o deadline dla działu/tematu
-function getDeadlineInfo(deckId, topicId = null) {
-    const deadlineKey = topicId ? `${deckId}-${topicId}` : deckId;
-    const deadline = userProgress.deadlines ? userProgress.deadlines[deadlineKey] : null;
-    
-    if (!deadline) return null;
-    
-    const now = new Date();
-    const deadlineDate = new Date(deadline.date);
-    const timeDiff = deadlineDate - now;
-    const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-    
-    let text, colorClass;
-    
-    if (timeDiff < 0) {
-        // Deadline minął
-        const daysAgo = Math.abs(daysDiff);
-        text = `Spóźnione o ${daysAgo} dni`;
-        colorClass = 'deadline-black';
-    } else if (daysDiff === 0) {
-        // Deadline dzisiaj
-        text = 'Dziś kończy się!';
-        colorClass = 'deadline-red';
-    } else if (daysDiff <= 2) {
-        // Mniej niż 2 dni
-        text = `Pozostało ${daysDiff} dni`;
-        colorClass = 'deadline-red';
-    } else if (daysDiff <= 7) {
-        // Tydzień lub mniej
-        text = `Pozostało ${daysDiff} dni`;
-        colorClass = 'deadline-orange';
-    } else {
-        // Więcej niż tydzień
-        text = `Pozostało ${daysDiff} dni`;
-        colorClass = 'deadline-green';
-    }
-    
-    return { text, colorClass, date: deadlineDate, daysDiff };
-}
-
-// Otwórz modal do ustawiania deadline
-function setDeadline(deckId, topicId = null) {
-    currentDeadlineKey = topicId ? `${deckId}-${topicId}` : deckId;
-    const currentDeadline = userProgress.deadlines ? userProgress.deadlines[currentDeadlineKey] : null;
-    
-    // Pobierz nazwę działu/tematu
-    let name = '';
-    const deck = appData.decks.find(d => d.id === deckId);
-    if (deck) {
-        if (topicId) {
-            const topic = deck.topics.find(t => t.id === topicId);
-            name = topic ? topic.name : '';
+// Accordion toggle
+function toggleAccordion(id) {
+    const content = document.getElementById(id);
+    const arrow = document.getElementById(id + '-arrow');
+    if (content) {
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            if (arrow) arrow.classList.add('rotated');
         } else {
-            name = deck.name;
+            content.style.display = 'none';
+            if (arrow) arrow.classList.remove('rotated');
         }
     }
-    
-    // Ustaw domyślną datę (za 7 dni)
-    const defaultDate = new Date();
-    defaultDate.setDate(defaultDate.getDate() + 7);
-    const defaultDateStr = defaultDate.toISOString().split('T')[0];
-    
-    // Ustaw treść modalu
-    document.getElementById('modalTitle').textContent = `Ustaw deadline dla: ${name}`;
-    document.getElementById('modalDescription').textContent = 'Wybierz datę deadline:';
-    document.getElementById('deadlineDate').value = currentDeadline ? 
-        new Date(currentDeadline.date).toISOString().split('T')[0] : defaultDateStr;
-    
-    // Pokaż modal
-    document.getElementById('deadlineModal').style.display = 'block';
 }
 
-// Zamknij modal
-function closeModal() {
-    document.getElementById('deadlineModal').style.display = 'none';
-    currentDeadlineKey = null;
-}
-
-// Zapisz deadline z modalu
-function saveDeadline() {
-    if (!currentDeadlineKey) return;
-    
-    const dateValue = document.getElementById('deadlineDate').value;
-    if (!dateValue) {
-        showNotification('Proszę wybrać datę', 'error');
-        return;
+function calculateDeckStats(deck) {
+    if (!deck || typeof deck !== 'object') {
+        console.warn('calculateDeckStats: deck nie istnieje lub nie jest obiektem', deck);
+        return { total: 0, mastered: 0, progress: 0 };
     }
     
-    try {
-        const dateObj = new Date(dateValue);
-        if (isNaN(dateObj.getTime())) {
-            showNotification('Nieprawidłowy format daty', 'error');
+    if (!Array.isArray(deck.topics)) {
+        console.warn('calculateDeckStats: deck.topics nie jest tablicą', deck.topics);
+        return { total: 0, mastered: 0, progress: 0 };
+    }
+    
+    let totalFlashcards = 0;
+    let masteredFlashcards = 0;
+    
+    const topics = deck.topics;
+    if (topics.length === 0) {
+        return { total: 0, mastered: 0, progress: 0 };
+    }
+    
+    console.log('calculateDeckStats dla', deck.id, ': topics.length=', topics.length);
+    
+    topics.forEach((topic, index) => {
+        if (!topic || typeof topic !== 'object') {
+            console.warn('calculateDeckStats: topic[' + index + '] nie jest obiektem', topic);
             return;
         }
+        if (!Array.isArray(topic.flashcards)) {
+            console.warn('calculateDeckStats: topic[' + index + '].flashcards nie jest tablicą', topic.flashcards);
+            topic.flashcards = [];
+        }
+        const flashcardsLength = Array.isArray(topic.flashcards) ? topic.flashcards.length : 0;
+        totalFlashcards += flashcardsLength;
         
-        // Zapisz deadline
-        if (!userProgress.deadlines) userProgress.deadlines = {};
-        userProgress.deadlines[currentDeadlineKey] = {
-            date: dateObj.toISOString(),
-            setDate: new Date().toISOString()
-        };
-        
-        saveUserProgress();
-        loadDecks(); // Odśwież widok
-        closeModal();
-        showNotification(`Deadline ustawiony na: ${dateObj.toLocaleDateString('pl-PL')}`, 'success');
-        
-    } catch (error) {
-        showNotification('Błąd podczas ustawiania deadline: ' + error.message, 'error');
-    }
+        if (userProgress && userProgress.decks && userProgress.decks[deck.id] && userProgress.decks[deck.id][topic.id]) {
+            const topicProgress = userProgress.decks[deck.id][topic.id];
+            if (topicProgress && typeof topicProgress === 'object') {
+                const values = Object.values(topicProgress);
+                if (Array.isArray(values)) {
+                    values.forEach(level => {
+                        if (level === 'mastered') masteredFlashcards++;
+                    });
+                }
+            }
+        }
+    });
+    
+    const progress = totalFlashcards > 0 ? Math.round((masteredFlashcards / totalFlashcards) * 100) : 0;
+    
+    return { total: totalFlashcards, mastered: masteredFlashcards, progress: progress };
 }
 
-// Zmiana języka testu
-function changeTestLanguage() {
-    testLanguage = document.getElementById('testLanguage').value;
-    if (testQuestions.length > 0) {
-        displayTestQuestion();
+function calculateTopicStats(deckId, topicId, totalFlashcards) {
+    let masteredFlashcards = 0;
+    
+    if (userProgress && userProgress.decks && userProgress.decks[deckId] && userProgress.decks[deckId][topicId]) {
+        const topicProgress = userProgress.decks[deckId][topicId];
+        if (topicProgress && typeof topicProgress === 'object') {
+            const values = Object.values(topicProgress) || [];
+            if (Array.isArray(values)) {
+                values.forEach(level => {
+                    if (level === 'mastered') masteredFlashcards++;
+                });
+            }
+        }
     }
+    
+    const progress = totalFlashcards > 0 ? Math.round((masteredFlashcards / totalFlashcards) * 100) : 0;
+    
+    return { mastered: masteredFlashcards, progress: progress };
 }
 
-// Wybór tematu do nauki z deduplikacją fiszek
-function selectTopic(deckId, topicId) {
+function studyDeck(deckId) {
     const deck = appData.decks.find(d => d.id === deckId);
-    if (!deck) return;
+    if (deck && Array.isArray(deck.topics) && deck.topics.length > 0) {
+        selectTopic(deckId, deck.topics[0].id).catch(e => console.error('Błąd w selectTopic:', e));
+    }
+}
+
+function startTestDeck(deckId) {
+    const deck = appData.decks.find(d => d.id === deckId);
+    if (deck && Array.isArray(deck.topics) && deck.topics.length > 0) {
+        selectTestTopic(deckId, deck.topics[0].id);
+        showSection('test');
+    }
+}
+
+// ==================== WYBÓR TEMATU DO NAUKI ====================
+async function selectTopic(deckId, topicId) {
+    const deck = appData.decks.find(d => d.id === deckId);
+    if (!deck || !Array.isArray(deck.topics)) return;
 
     const topic = deck.topics.find(t => t.id === topicId);
     if (!topic) return;
 
+    // Załaduj flashcards jeśli są puste
+    if (!topic.flashcards || topic.flashcards.length === 0) {
+        try {
+            const response = await fetch(`data/${deck.id}/${topic.file}`);
+            const data = await response.json();
+            topic.flashcards = Array.isArray(data) ? data : (data.flashcards || []);
+        } catch (e) {
+            console.error(`Błąd ładowania flashcards dla ${topic.id}:`, e);
+            topic.flashcards = [];
+        }
+    }
+
     currentDeck = deckId;
     currentTopic = topicId;
     
-    // DEDUPLIKACJA: Grupuj fiszki po polskich słowach
     const groupedFlashcards = {};
-    topic.flashcards.forEach(flashcard => {
+    (Array.isArray(topic.flashcards) ? topic.flashcards : []).forEach(flashcard => {
+        if (!flashcard || typeof flashcard !== 'object') return;
         if (!groupedFlashcards[flashcard.polish]) {
             groupedFlashcards[flashcard.polish] = {
                 polish: flashcard.polish,
@@ -449,32 +805,26 @@ function selectTopic(deckId, topicId) {
     
     originalFlashcards = Object.values(groupedFlashcards);
     
-    // Zresetuj tryb nauki do domyślnego
     studyMode = 'all';
     document.getElementById('studyModeToggle').classList.remove('btn-active');
     document.getElementById('studyModeToggle').innerHTML = '<i class="fas fa-filter"></i> Tylko do nauki';
     
-    // Resetuj zaawansowane filtry
     resetAdvancedFilters();
-    
-    // Załaduj fiszki z uwzględnieniem filtrowania
     loadFilteredFlashcards();
     
     currentFlashcardIndex = 0;
 
-    // Aktualizacja interfejsu
     document.getElementById('studyTitle').textContent = `Nauka: ${deck.name} - ${topic.name}`;
     
-    // Sprawdź i pokaż informację o deadline
     const deadlineInfo = getDeadlineInfo(deckId, topicId);
     showDeadlineInfo(deadlineInfo);
     
     showSection('study');
     displayCurrentFlashcard();
     updateStudyStats();
+    logActivity('study', { deck: deckId, topic: topicId });
 }
 
-// Resetuj zaawansowane filtry
 function resetAdvancedFilters() {
     document.getElementById('filterNew').checked = true;
     document.getElementById('filterLearning').checked = true;
@@ -482,25 +832,19 @@ function resetAdvancedFilters() {
     document.getElementById('filterMastered').checked = false;
 }
 
-// Załaduj przefiltrowane fiszki na podstawie trybu nauki
 function loadFilteredFlashcards() {
     if (studyMode === 'all') {
-        // Pokaż wszystkie fiszki
         currentFlashcards = [...originalFlashcards];
     } else {
-        // Filtruj fiszki - pokaż tylko te, które nie są opanowane na 100%
         currentFlashcards = originalFlashcards.filter(flashcard => {
-            // Dla zgrupowanych fiszek sprawdzamy po pierwszym oryginalnym indeksie
             const level = getKnowledgeLevel(currentDeck, currentTopic, flashcard.originalIndices[0]);
             return level !== 'mastered';
         });
     }
     
-    // Dodatkowo zastosuj zaawansowane filtry
     applyAdvancedFilters();
 }
 
-// Przełącz tryb nauki (wszystkie fiszki / tylko do nauki)
 function toggleStudyMode() {
     const toggleButton = document.getElementById('studyModeToggle');
     
@@ -514,40 +858,12 @@ function toggleStudyMode() {
         toggleButton.innerHTML = '<i class="fas fa-filter"></i> Tylko do nauki';
     }
     
-    // Załaduj przefiltrowane fiszki
     loadFilteredFlashcards();
-    
-    // Zresetuj indeks fiszki
     currentFlashcardIndex = 0;
-    
-    // Aktualizuj widok
     displayCurrentFlashcard();
     updateStudyStats();
 }
 
-// Przełącz tryb nauki w testach (wszystkie fiszki / tylko do nauki)
-function toggleTestStudyMode() {
-    const toggleButton = document.getElementById('testStudyModeToggle');
-    
-    if (testStudyMode === 'all') {
-        testStudyMode = 'toLearn';
-        toggleButton.classList.add('btn-active');
-        toggleButton.innerHTML = '<i class="fas fa-filter"></i> Wszystkie fiszki';
-    } else {
-        testStudyMode = 'all';
-        toggleButton.classList.remove('btn-active');
-        toggleButton.innerHTML = '<i class="fas fa-filter"></i> Tylko do nauki';
-    }
-    
-    // Jeśli test jest już wybrany, przeładuj pytania z uwzględnieniem filtra
-    if (testDeck && testTopic) {
-        prepareTestQuestions();
-        currentTestQuestion = 0;
-        displayTestQuestion();
-    }
-}
-
-// Pokaż/ukryj zaawansowane filtry
 function toggleAdvancedFilters() {
     const filters = document.getElementById('advancedFilters');
     const toggleButton = document.getElementById('advancedFiltersToggle');
@@ -561,16 +877,13 @@ function toggleAdvancedFilters() {
     }
 }
 
-// Zastosuj zaawansowane filtry
 function applyAdvancedFilters() {
     const showNew = document.getElementById('filterNew').checked;
     const showLearning = document.getElementById('filterLearning').checked;
     const showAlmost = document.getElementById('filterAlmost').checked;
     const showMastered = document.getElementById('filterMastered').checked;
     
-    // Filtruj fiszki na podstawie poziomów wiedzy
     currentFlashcards = currentFlashcards.filter(flashcard => {
-        // Dla zgrupowanych fiszek sprawdzamy po pierwszym oryginalnym indeksie
         const level = getKnowledgeLevel(currentDeck, currentTopic, flashcard.originalIndices[0]);
         
         return (level === 'new' && showNew) ||
@@ -579,7 +892,6 @@ function applyAdvancedFilters() {
                (level === 'mastered' && showMastered);
     });
     
-    // Dostosuj indeks jeśli jest poza zakresem
     if (currentFlashcardIndex >= currentFlashcards.length) {
         currentFlashcardIndex = Math.max(0, currentFlashcards.length - 1);
     }
@@ -588,146 +900,213 @@ function applyAdvancedFilters() {
     updateStudyStats();
 }
 
-// Nowa funkcja przygotowująca pytania testowe z filtrowaniem
-function prepareTestQuestions() {
-    const deck = appData.decks.find(d => d.id === testDeck);
-    const topic = deck.topics.find(t => t.id === testTopic);
+// ==================== WYŚWIETLANIE FISZKI ====================
+function displayCurrentFlashcard() {
+    if (!Array.isArray(currentFlashcards) || currentFlashcards.length === 0) {
+        document.getElementById('flashcardFront').textContent = 'Brak fiszek do nauki';
+        document.getElementById('flashcardBack').textContent = 'Brak fiszek do nauki';
+        document.querySelector('.knowledge-levels').style.display = 'none';
+        document.querySelector('.flashcard-controls').style.display = 'none';
+        document.getElementById('progressBar').style.width = '0%';
+        document.getElementById('progressText').textContent = '0%';
+        hideProgressIndicator();
+        return;
+    }
+    
+    document.querySelector('.knowledge-levels').style.display = 'grid';
+    document.querySelector('.flashcard-controls').style.display = 'flex';
 
-    // Zbieramy listę fiszek uwzględniając tryb (wszystkie / tylko do nauki)
-    const itemsToConsider = [];
-    topic.flashcards.forEach((flashcard, index) => {
-        if (testStudyMode === 'all') {
-            itemsToConsider.push({ flashcard, index });
-        } else {
-            const level = getKnowledgeLevel(testDeck, testTopic, index);
-            if (level !== 'mastered') itemsToConsider.push({ flashcard, index });
+    const flashcard = currentFlashcards[currentFlashcardIndex];
+    
+    if (flashcard.count && flashcard.count > 1) {
+        document.getElementById('flashcardFront').textContent = flashcard.polish;
+        document.getElementById('flashcardBack').textContent = flashcard.english.join(', ');
+        
+        let translationCount = document.querySelector('.translation-count');
+        if (!translationCount) {
+            translationCount = document.createElement('div');
+            translationCount.className = 'translation-count';
+            document.querySelector('.flashcard-front').appendChild(translationCount);
         }
-    });
-
-    if (itemsToConsider.length === 0) {
-        // Fallback do wszystkich fiszek jeśli nie ma nic do nauki
-        topic.flashcards.forEach((flashcard, index) => itemsToConsider.push({ flashcard, index }));
+        translationCount.textContent = flashcard.count;
+    } else {
+        document.getElementById('flashcardFront').textContent = flashcard.polish;
+        document.getElementById('flashcardBack').textContent = flashcard.english;
+        
+        const translationCount = document.querySelector('.translation-count');
+        if (translationCount) translationCount.remove();
     }
+    
+    const currentLevel = getKnowledgeLevel(currentDeck, currentTopic, flashcard.originalIndices[0]);
+    document.getElementById('flashcardLevel').textContent = getLevelText(currentLevel);
+    document.getElementById('flashcardLevelBack').textContent = getLevelText(currentLevel);
+    
+    document.getElementById('flashcard').classList.remove('flipped');
+    document.getElementById('flashcardNumber').textContent = `#${currentFlashcardIndex + 1}`;
+    document.getElementById('flashcardTotal').textContent = `/${currentFlashcards.length}`;
 
-    // Deduplikujemy pytania po fragmencie, który będzie wyświetlany (zależnie od języka testu)
-    const map = new Map();
-    itemsToConsider.forEach(({ flashcard, index }) => {
-        const key = testLanguage === 'polish' ? flashcard.polish : flashcard.english;
-        if (!map.has(key)) {
-            map.set(key, {
-                // Pola kompatybilne z istniejącym kodem
-                polish: flashcard.polish,
-                english: flashcard.english,
-                // Dodatkowe zbiory możliwych tłumaczeń
-                polishes: [flashcard.polish],
-                englishs: [flashcard.english],
-                // Indeksy oryginalnych fiszek w temacie
-                originalIndices: [index]
-            });
-        } else {
-            const entry = map.get(key);
-            // Dodajemy tłumaczenie tylko jeśli go jeszcze nie ma
-            if (!entry.englishs.includes(flashcard.english)) entry.englishs.push(flashcard.english);
-            if (!entry.polishes.includes(flashcard.polish)) entry.polishes.push(flashcard.polish);
-            if (!entry.originalIndices.includes(index)) entry.originalIndices.push(index);
+    const progress = ((currentFlashcardIndex + 1) / currentFlashcards.length) * 100;
+    document.getElementById('progressBar').style.width = `${progress}%`;
+    document.getElementById('progressText').textContent = `${Math.round(progress)}%`;
+    
+    showProgressIndicator(currentFlashcardIndex + 1, currentFlashcards.length);
+}
+
+function flipCard() {
+    document.getElementById('flashcard').classList.toggle('flipped');
+}
+
+function nextCard() {
+    if (currentFlashcards.length === 0) return;
+    currentFlashcardIndex = (currentFlashcardIndex + 1) % currentFlashcards.length;
+    displayCurrentFlashcard();
+}
+
+function prevCard() {
+    if (currentFlashcards.length === 0) return;
+    currentFlashcardIndex = (currentFlashcardIndex - 1 + currentFlashcards.length) % currentFlashcards.length;
+    displayCurrentFlashcard();
+}
+
+function showProgressIndicator(current, total) {
+    const indicator = document.getElementById('progressIndicator');
+    const currentSpan = document.getElementById('currentProgress');
+    const totalSpan = document.getElementById('totalProgress');
+    
+    if (indicator && currentSpan && totalSpan) {
+        currentSpan.textContent = current;
+        totalSpan.textContent = total;
+        indicator.style.display = 'flex';
+    }
+}
+
+function hideProgressIndicator() {
+    const indicator = document.getElementById('progressIndicator');
+    if (indicator) indicator.style.display = 'none';
+}
+
+// ==================== POZIOM WIEDZY ====================
+function setKnowledgeLevel(level) {
+    if (currentFlashcards.length === 0) return;
+
+    const flashcard = currentFlashcards[currentFlashcardIndex];
+    
+    // Animation
+    const btn = document.querySelector(`.knowledge-btn.knowledge-${level}`);
+    if (btn) {
+        btn.classList.add('animate-click');
+        setTimeout(() => btn.classList.remove('animate-click'), 300);
+    }
+    
+    if (flashcard.originalIndices) {
+        flashcard.originalIndices.forEach(originalIndex => {
+            setKnowledgeLevelForCard(originalIndex, level);
+        });
+    } else {
+        const originalDeck = appData.decks.find(d => d.id === currentDeck);
+        const originalTopic = originalDeck.topics.find(t => t.id === currentTopic);
+        const originalIndex = originalTopic.flashcards.findIndex(f => 
+            f.polish === flashcard.polish && f.english === flashcard.english
+        );
+        setKnowledgeLevelForCard(originalIndex, level);
+    }
+    
+    saveUserProgress();
+    updateStats();
+    updateStudyStats();
+    updateQuickStats();
+    checkAchievements();
+    
+    if (studyMode === 'toLearn' && level === 'mastered') {
+        loadFilteredFlashcards();
+        
+        if (currentFlashcards.length === 0) {
+            displayCurrentFlashcard();
+            return;
         }
-    });
-
-    testQuestions = Array.from(map.values());
-
-    // Tasowanie pytań
-    shuffleArray(testQuestions);
+        
+        if (currentFlashcardIndex >= currentFlashcards.length) {
+            currentFlashcardIndex = currentFlashcards.length - 1;
+        }
+        
+        displayCurrentFlashcard();
+    }
 }
 
-// Aktualizuj statystyki nauki
-function updateStudyStats() {
-    if (!currentDeck || !currentTopic) return;
+function setKnowledgeLevelForCard(originalIndex, level) {
+    if (originalIndex === -1) return;
+
+    if (!userProgress.decks[currentDeck]) userProgress.decks[currentDeck] = {};
+    if (!userProgress.decks[currentDeck][currentTopic]) userProgress.decks[currentDeck][currentTopic] = {};
     
-    const totalFlashcards = originalFlashcards.length;
-    const masteredFlashcards = originalFlashcards.filter(flashcard => {
-        const level = getKnowledgeLevel(currentDeck, currentTopic, flashcard.originalIndices[0]);
-        return level === 'mastered';
-    }).length;
+    userProgress.decks[currentDeck][currentTopic][originalIndex] = level;
     
-    const toLearnFlashcards = totalFlashcards - masteredFlashcards;
-    const currentModeFlashcards = currentFlashcards.length;
+    const nextReview = new Date();
+    nextReview.setDate(nextReview.getDate() + spacedRepetitionIntervals[level]);
     
-    // Utwórz lub zaktualizuj kontener statystyk
-    let statsContainer = document.getElementById('studyStats');
-    if (!statsContainer) {
-        statsContainer = document.createElement('div');
-        statsContainer.id = 'studyStats';
-        statsContainer.className = 'study-stats';
-        const deadlineInfo = document.getElementById('deadlineInfo');
-        deadlineInfo.after(statsContainer);
+    if (!userProgress.spacedRepetition) userProgress.spacedRepetition = {};
+    if (!userProgress.spacedRepetition[currentDeck]) userProgress.spacedRepetition[currentDeck] = {};
+    if (!userProgress.spacedRepetition[currentDeck][currentTopic]) {
+        userProgress.spacedRepetition[currentDeck][currentTopic] = {};
     }
     
-    statsContainer.innerHTML = `
-        <div class="study-stat">
-            <div class="study-stat-value">${totalFlashcards}</div>
-            <div class="study-stat-label">Wszystkie</div>
-        </div>
-        <div class="study-stat">
-            <div class="study-stat-value">${masteredFlashcards}</div>
-            <div class="study-stat-label">Opanowane</div>
-        </div>
-        <div class="study-stat">
-            <div class="study-stat-value">${toLearnFlashcards}</div>
-            <div class="study-stat-label">Do nauki</div>
-        </div>
-        <div class="study-stat">
-            <div class="study-stat-value">${currentModeFlashcards}</div>
-            <div class="study-stat-label">W trybie</div>
-        </div>
-    `;
+    userProgress.spacedRepetition[currentDeck][currentTopic][originalIndex] = nextReview.toISOString();
 }
 
-// Wybór tematu do testu
-function selectTestTopic(deckId, topicId) {
-    const deck = appData.decks.find(d => d.id === deckId);
-    if (!deck) return;
-
-    const topic = deck.topics.find(t => t.id === topicId);
-    if (!topic) return;
-
-    testDeck = deckId;
-    testTopic = topicId;
-    
-    // Przygotuj pytania testowe z uwzględnieniem filtra
-    prepareTestQuestions();
-    // Dodatkowe tasowanie, aby mieć pewność, że kolejność jest losowa
-    shuffleArray(testQuestions);
-    
-    // Resetujemy tryb poprawy
-    isReviewMode = false;
-    incorrectAnswers = [];
-    reviewQuestions = [];
-    
-    currentTestQuestion = 0;
-    testResults = { correct: 0, total: testQuestions.length };
-
-    // Aktualizacja interfejsu
-    document.getElementById('testTitle').textContent = `Test: ${deck.name} - ${topic.name}`;
-    
-    // Ukryj wybór tematów
-    document.getElementById('testTopicSelection').style.display = 'none';
-    
-    // Rozpocznij test
-    document.getElementById('testResult').style.display = 'none';
-    document.getElementById('incorrectAnswersList').style.display = 'none';
-    displayTestQuestion();
-}
-
-// Funkcja do tasowania tablicy
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+function getKnowledgeLevel(deckId, topicId, flashcardIndex) {
+    if (userProgress.decks[deckId] && 
+        userProgress.decks[deckId][topicId] && 
+        userProgress.decks[deckId][topicId][flashcardIndex] !== undefined) {
+        return userProgress.decks[deckId][topicId][flashcardIndex];
     }
-    return array;
+    return 'new';
 }
 
-// Pokazanie informacji o deadline w widoku nauki
+function getLevelText(level) {
+    switch(level) {
+        case 'new': return 'Nowe';
+        case 'learning': return 'Uczę się';
+        case 'almost': return 'Prawie umiem';
+        case 'mastered': return 'Umiem';
+        default: return 'Nowe';
+    }
+}
+
+// ==================== DEADLINE ====================
+function getDeadlineInfo(deckId, topicId = null) {
+    const deadlineKey = topicId ? `${deckId}-${topicId}` : deckId;
+    const deadline = userProgress.deadlines ? userProgress.deadlines[deadlineKey] : null;
+    
+    if (!deadline) return null;
+    
+    const now = new Date();
+    const deadlineDate = new Date(deadline.date);
+    const timeDiff = deadlineDate - now;
+    const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+    
+    let text, colorClass;
+    
+    if (timeDiff < 0) {
+        const daysAgo = Math.abs(daysDiff);
+        text = `Spóźnione o ${daysAgo} dni`;
+        colorClass = 'deadline-black';
+    } else if (daysDiff === 0) {
+        text = 'Dziś kończy się!';
+        colorClass = 'deadline-red';
+    } else if (daysDiff <= 2) {
+        text = `Pozostało ${daysDiff} dni`;
+        colorClass = 'deadline-red';
+    } else if (daysDiff <= 7) {
+        text = `Pozostało ${daysDiff} dni`;
+        colorClass = 'deadline-orange';
+    } else {
+        text = `Pozostało ${daysDiff} dni`;
+        colorClass = 'deadline-green';
+    }
+    
+    return { text, colorClass, date: deadlineDate, daysDiff };
+}
+
 function showDeadlineInfo(deadlineInfo) {
     const deadlineContainer = document.getElementById('deadlineInfo');
     if (!deadlineContainer) return;
@@ -753,59 +1132,505 @@ function showDeadlineInfo(deadlineInfo) {
     }
 }
 
-// Wyświetlanie aktualnej fiszki z obsługą wielu tłumaczeń
-function displayCurrentFlashcard() {
-    if (currentFlashcards.length === 0) {
-        document.getElementById('flashcardFront').textContent = 'Brak fiszek do nauki';
-        document.getElementById('flashcardBack').textContent = 'Brak fiszek do nauki';
-        
-        // Ukryj kontrolek jeśli nie ma fiszek
-        document.querySelector('.knowledge-levels').style.display = 'none';
-        document.querySelector('.flashcard-controls').style.display = 'none';
-        document.getElementById('progressBar').style.width = '0%';
+function setDeadline(deckId, topicId = null) {
+    currentDeadlineKey = topicId ? `${deckId}-${topicId}` : deckId;
+    const currentDeadline = userProgress.deadlines ? userProgress.deadlines[currentDeadlineKey] : null;
+    
+    let name = '';
+    const deck = appData.decks.find(d => d.id === deckId);
+    if (deck) {
+        if (topicId) {
+            const topic = deck.topics.find(t => t.id === topicId);
+            name = topic ? topic.name : '';
+        } else {
+            name = deck.name;
+        }
+    }
+    
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 7);
+    const defaultDateStr = defaultDate.toISOString().split('T')[0];
+    
+    document.getElementById('modalTitle').textContent = `Ustaw deadline dla: ${name}`;
+    document.getElementById('modalDescription').textContent = 'Wybierz datę deadline:';
+    document.getElementById('deadlineDate').value = currentDeadline ? 
+        new Date(currentDeadline.date).toISOString().split('T')[0] : defaultDateStr;
+    
+    document.getElementById('deadlineModal').style.display = 'block';
+}
+
+function closeModal() {
+    document.getElementById('deadlineModal').style.display = 'none';
+    currentDeadlineKey = null;
+}
+
+function saveDeadline() {
+    if (!currentDeadlineKey) return;
+    
+    const dateValue = document.getElementById('deadlineDate').value;
+    if (!dateValue) {
+        showNotification('Proszę wybrać datę', 'error');
         return;
     }
     
-    // Pokaż kontrolek jeśli są fiszek
-    document.querySelector('.knowledge-levels').style.display = 'flex';
-    document.querySelector('.flashcard-controls').style.display = 'flex';
-
-    const flashcard = currentFlashcards[currentFlashcardIndex];
-
-    // Sprawdzamy czy to zgrupowana fiszka z wieloma tłumaczeniami
-    if (flashcard.count && flashcard.count > 1) {
-        document.getElementById('flashcardFront').textContent = flashcard.polish;
-        document.getElementById('flashcardBack').textContent = flashcard.english.join(', ');
-        
-        // Pokaż liczbę tłumaczeń
-        let translationCount = document.querySelector('.translation-count');
-        if (!translationCount) {
-            translationCount = document.createElement('div');
-            translationCount.className = 'translation-count';
-            document.querySelector('.flashcard-front').appendChild(translationCount);
+    try {
+        const dateObj = new Date(dateValue);
+        if (isNaN(dateObj.getTime())) {
+            showNotification('Nieprawidłowy format daty', 'error');
+            return;
         }
-        translationCount.textContent = flashcard.count;
-    } else {
-        document.getElementById('flashcardFront').textContent = flashcard.polish;
-        document.getElementById('flashcardBack').textContent = flashcard.english;
         
-        // Ukryj liczbę tłumaczeń jeśli nie jest potrzebna
-        const translationCount = document.querySelector('.translation-count');
-        if (translationCount) {
-            translationCount.remove();
-        }
+        if (!userProgress.deadlines) userProgress.deadlines = {};
+        userProgress.deadlines[currentDeadlineKey] = {
+            date: dateObj.toISOString(),
+            setDate: new Date().toISOString()
+        };
+        
+        saveUserProgress();
+        loadDecks();
+        closeModal();
+        showNotification(`Deadline ustawiony na: ${dateObj.toLocaleDateString('pl-PL')}`, 'success');
+        
+    } catch (error) {
+        showNotification('Błąd podczas ustawiania deadline: ' + error.message, 'error');
     }
-
-    // Resetowanie obrócenia fiszki
-    document.getElementById('flashcard').classList.remove('flipped');
-
-    // Aktualizacja paska postępu
-    const progress = ((currentFlashcardIndex + 1) / currentFlashcards.length) * 100;
-    document.getElementById('progressBar').style.width = `${progress}%`;
 }
 
-// Wyświetlanie pytania testowego
+function setDefaultDeadline(days) {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    document.getElementById('deadlineDate').value = date.toISOString().split('T')[0];
+}
+
+// ==================== TESTY ====================
+function setTestMode(mode) {
+    testMode = mode;
+    
+    document.getElementById('writingTest').style.display = 'none';
+    document.getElementById('multipleTest').style.display = 'none';
+    document.getElementById('truefalseTest').style.display = 'none';
+    
+    const testModeButtons = document.querySelectorAll('.test-mode-btn');
+    testModeButtons.forEach(btn => btn.classList.remove('active'));
+    
+    if (mode === 'writing') {
+        document.getElementById('writingTest').style.display = 'block';
+        document.querySelectorAll('.test-mode-btn')[0].classList.add('active');
+    } else if (mode === 'multiple') {
+        document.getElementById('multipleTest').style.display = 'block';
+        document.querySelectorAll('.test-mode-btn')[1].classList.add('active');
+    } else if (mode === 'truefalse') {
+        document.getElementById('truefalseTest').style.display = 'block';
+        document.querySelectorAll('.test-mode-btn')[2].classList.add('active');
+    }
+    
+    if (testQuestions.length > 0) {
+        shuffleArray(testQuestions);
+        displayTestQuestion();
+    }
+}
+
+function changeTestLanguage() {
+    testLanguage = document.getElementById('testLanguage').value;
+    if (testQuestions.length > 0) displayTestQuestion();
+}
+
+function toggleTestStudyMode() {
+    const toggleButton = document.getElementById('testStudyModeToggle');
+    
+    if (testStudyMode === 'all') {
+        testStudyMode = 'toLearn';
+        toggleButton.classList.add('btn-active');
+        toggleButton.innerHTML = '<i class="fas fa-filter"></i> Wszystkie fiszki';
+    } else {
+        testStudyMode = 'all';
+        toggleButton.classList.remove('btn-active');
+        toggleButton.innerHTML = '<i class="fas fa-filter"></i> Tylko do nauki';
+    }
+    
+    if (testDeck && testTopic) {
+        prepareTestQuestions();
+        currentTestQuestion = 0;
+        displayTestQuestion();
+    }
+}
+
+function updateTestSettings() {
+    if (testDeck && testTopic) {
+        prepareTestQuestions();
+        currentTestQuestion = 0;
+        displayTestQuestion();
+    }
+}
+
+function selectTestTopic(deckId, topicId) {
+    const deck = appData.decks.find(d => d.id === deckId);
+    if (!deck) return;
+
+    const topic = deck.topics.find(t => t.id === topicId);
+    if (!topic) return;
+
+    testDeck = deckId;
+    testTopic = topicId;
+    
+    selectedTopicsForTest.clear();
+    selectedTopicsForTest.add(`${deckId}-${topicId}`);
+    
+    prepareTestQuestions();
+    shuffleArray(testQuestions);
+    
+    isReviewMode = false;
+    incorrectAnswers = [];
+    reviewQuestions = [];
+    
+    currentTestQuestion = 0;
+    testResults = { correct: 0, total: testQuestions.length };
+    
+    document.getElementById('testTitle').textContent = `Test: ${deck.name} - ${topic.name}`;
+    document.getElementById('selectedDeckName').textContent = `${deck.name} - ${topic.name}`;
+    document.getElementById('selectedDeckInfo').textContent = `${topic.flashcards.length} fiszek`;
+    
+    const topicStats = calculateTopicStats(deckId, topicId, topic.flashcards.length);
+    document.getElementById('selectedDeckStats').innerHTML = `
+        <span class="progress-badge">${topicStats.progress}% opanowanych</span>
+    `;
+    
+    document.getElementById('testTopicSelection').style.display = 'none';
+    document.getElementById('testResult').style.display = 'none';
+    document.getElementById('incorrectAnswersList').style.display = 'none';
+    
+    setupTestCounter();
+    displayTestQuestion();
+    testStartTime = new Date();
+}
+
+function showTestTopicSelection() {
+    const topicsContainer = document.getElementById('testTopicsContainer');
+    topicsContainer.innerHTML = '';
+    
+    const groupedTopics = {};
+    appData.decks.forEach(deck => {
+        if (!groupedTopics[deck.id]) {
+            groupedTopics[deck.id] = {
+                deckName: deck.name,
+                topics: []
+            };
+        }
+        
+        deck.topics.forEach(topic => {
+            const topicKey = `${deck.id}-${topic.id}`;
+            const isSelected = selectedTopicsForTest.has(topicKey);
+            
+            groupedTopics[deck.id].topics.push({
+                deckId: deck.id,
+                topicId: topic.id,
+                topicName: topic.name,
+                flashcardCount: topic.flashcards.length,
+                isSelected: isSelected
+            });
+        });
+    });
+    
+    Object.keys(groupedTopics).forEach((deckId, index) => {
+        const deckData = groupedTopics[deckId];
+        const deckContainer = document.createElement('div');
+        deckContainer.className = 'deck-item'; // Use same class as My Decks
+        const accordionId = `test-deck-accordion-${index}`;
+        
+        // Find deck icon if possible, otherwise default
+        const deck = appData.decks.find(d => d.id === deckId);
+        const deckIcon = deck ? deck.icon : 'fas fa-folder';
+
+        deckContainer.innerHTML = `
+            <div class="deck-header" onclick="toggleAccordion('${accordionId}')" style="margin-bottom:0; padding: 15px;">
+                <div class="deck-title-group">
+                    <div class="deck-icon-box" style="width:40px; height:40px; font-size:1.2rem;"><i class="${deckIcon}"></i></div>
+                    <div>
+                        <h3 style="font-size:1.1rem;">${deckData.deckName}</h3>
+                        <p class="deck-desc-short">${deckData.topics.length} tematów</p>
+                    </div>
+                </div>
+                <div class="deck-arrow" id="${accordionId}-arrow"><i class="fas fa-chevron-down"></i></div>
+            </div>
+            
+            <div class="deck-topics-container" id="${accordionId}" style="display:none; border-top:1px solid #f1f5f9; padding: 15px;">
+                ${deckData.topics.map(topic => {
+                    const topicStats = calculateTopicStats(topic.deckId, topic.topicId, topic.flashcardCount);
+                    return `
+                        <div class="topic-item" onclick="toggleTopicSelectionFromDiv(event, '${topic.deckId}', '${topic.topicId}')" style="padding: 10px;">
+                            <div class="topic-header">
+                                <div style="display:flex; align-items:center; gap:10px;">
+                                    <input type="checkbox" 
+                                           id="cb-${topic.deckId}-${topic.topicId}"
+                                           ${topic.isSelected ? 'checked' : ''}
+                                           class="topic-checkbox"
+                                           style="width:18px; height:18px; cursor:pointer;">
+                                    <span class="topic-name" style="font-size:1rem;">${topic.topicName}</span>
+                                </div>
+                                <span class="topic-flashcards badge">${topic.flashcardCount}</span>
+                            </div>
+                            <div class="topic-meta" style="margin-top:5px;">
+                                <div class="progress-bar small" style="flex-grow:1; height:6px;">
+                                    <div class="progress" style="width: ${topicStats.progress}%"></div>
+                                </div>
+                                <span class="progress-text" style="font-size:0.8rem;">${topicStats.progress}%</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+        
+        topicsContainer.appendChild(deckContainer);
+    });
+    
+    document.getElementById('testTopicSelection').style.display = 'block';
+}
+
+function toggleTopicSelectionFromDiv(event, deckId, topicId) {
+    // Prevent triggering if clicking directly on checkbox (it handles itself)
+    if (event.target.type === 'checkbox') {
+        toggleTopicSelection(deckId, topicId, event.target.checked);
+        return;
+    }
+    
+    const checkbox = document.getElementById(`cb-${deckId}-${topicId}`);
+    if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        toggleTopicSelection(deckId, topicId, checkbox.checked);
+    }
+}
+
+function toggleTopicSelection(deckId, topicId, isSelected) {
+    const topicKey = `${deckId}-${topicId}`;
+    if (isSelected) {
+        selectedTopicsForTest.add(topicKey);
+    } else {
+        selectedTopicsForTest.delete(topicKey);
+    }
+}
+
+function hideTestTopicSelection() {
+    document.getElementById('testTopicSelection').style.display = 'none';
+}
+
+function startTestFromSelection() {
+    if (selectedTopicsForTest.size === 0) {
+        showNotification('Wybierz przynajmniej jeden temat', 'error');
+        return;
+    }
+    
+    hideTestTopicSelection();
+    
+    let allFlashcards = [];
+    let selectedDeckName = '';
+    let totalFlashcards = 0;
+    
+    selectedTopicsForTest.forEach(topicKey => {
+        const [deckId, topicId] = topicKey.split('-');
+        const deck = appData.decks.find(d => d.id === deckId);
+        const topic = deck.topics.find(t => t.id === topicId);
+        
+        if (deck && topic) {
+            allFlashcards = allFlashcards.concat(topic.flashcards.map((card, index) => ({
+                ...card,
+                deckId: deckId,
+                topicId: topicId,
+                originalIndex: index
+            })));
+            
+            if (!selectedDeckName) {
+                selectedDeckName = deck.name;
+            } else if (!selectedDeckName.includes(deck.name)) {
+                selectedDeckName += `, ${deck.name}`;
+            }
+            
+            totalFlashcards += Array.isArray(topic.flashcards) ? topic.flashcards.length : 0;
+        }
+    });
+    
+    testDeck = 'multiple';
+    testTopic = 'multiple';
+    
+    prepareTestQuestionsFromFlashcards(allFlashcards);
+    shuffleArray(testQuestions);
+    
+    isReviewMode = false;
+    incorrectAnswers = [];
+    reviewQuestions = [];
+    
+    currentTestQuestion = 0;
+    testResults = { correct: 0, total: testQuestions.length };
+    
+    document.getElementById('testTitle').textContent = `Test: ${selectedDeckName}`;
+    document.getElementById('selectedDeckName').textContent = selectedDeckName;
+    document.getElementById('selectedDeckInfo').textContent = `${selectedTopicsForTest.size} tematów, ${totalFlashcards} fiszek`;
+    
+    let masteredCount = 0;
+    allFlashcards.forEach(card => {
+        const level = getKnowledgeLevel(card.deckId, card.topicId, card.originalIndex);
+        if (level === 'mastered') masteredCount++;
+    });
+    
+    const progress = totalFlashcards > 0 ? Math.round((masteredCount / totalFlashcards) * 100) : 0;
+    document.getElementById('selectedDeckStats').innerHTML = `
+        <span class="progress-badge">${progress}% opanowanych</span>
+    `;
+    
+    document.getElementById('testResult').style.display = 'none';
+    document.getElementById('incorrectAnswersList').style.display = 'none';
+    
+    setupTestCounter();
+    displayTestQuestion();
+    testStartTime = new Date();
+}
+
+function prepareTestQuestionsFromFlashcards(flashcards) {
+    const questionCountSelect = document.getElementById('testQuestionsCount');
+    const selectedCount = questionCountSelect ? questionCountSelect.value : 'all';
+    
+    let filteredFlashcards = [...flashcards];
+    
+    if (testStudyMode === 'toLearn') {
+        filteredFlashcards = flashcards.filter(card => {
+            const level = getKnowledgeLevel(card.deckId, card.topicId, card.originalIndex);
+            return level !== 'mastered';
+        });
+        
+        if (filteredFlashcards.length === 0) {
+            filteredFlashcards = [...flashcards];
+        }
+    }
+    
+    const uniqueFlashcards = new Map();
+    filteredFlashcards.forEach(flashcard => {
+        const key = testLanguage === 'polish' ? flashcard.polish : flashcard.english;
+        if (!uniqueFlashcards.has(key)) {
+            uniqueFlashcards.set(key, {
+                flashcard: flashcard,
+                originalIndices: [flashcard.originalIndex],
+                deckId: flashcard.deckId,
+                topicId: flashcard.topicId
+            });
+        } else {
+            uniqueFlashcards.get(key).originalIndices.push(flashcard.originalIndex);
+        }
+    });
+    
+    testQuestions = Array.from(uniqueFlashcards.values());
+    
+    if (selectedCount !== 'all') {
+        const count = parseInt(selectedCount);
+        if (testQuestions.length > count) {
+            shuffleArray(testQuestions);
+            testQuestions = testQuestions.slice(0, count);
+        }
+    }
+    
+    testCounter = {
+        current: 1,
+        total: testQuestions.length,
+        correct: 0,
+        incorrect: 0
+    };
+    
+    updateTestCounter();
+}
+
+function prepareTestQuestions() {
+    if (!testDeck || !testTopic || testDeck === 'multiple') return;
+
+    const deck = appData.decks.find(d => d.id === testDeck);
+    const topic = deck.topics.find(t => t.id === testTopic);
+
+    let availableFlashcards = [];
+    
+    if (testStudyMode === 'all') {
+        availableFlashcards = [...topic.flashcards];
+    } else {
+        availableFlashcards = topic.flashcards.filter((flashcard, index) => {
+            const level = getKnowledgeLevel(testDeck, testTopic, index);
+            return level !== 'mastered';
+        });
+    }
+    
+    if (availableFlashcards.length === 0) {
+        availableFlashcards = [...topic.flashcards];
+    }
+    
+    const uniqueFlashcards = new Map();
+    availableFlashcards.forEach((flashcard, index) => {
+        const key = testLanguage === 'polish' ? flashcard.polish : flashcard.english;
+        if (!uniqueFlashcards.has(key)) {
+            uniqueFlashcards.set(key, {
+                flashcard: flashcard,
+                originalIndices: [index]
+            });
+        } else {
+            uniqueFlashcards.get(key).originalIndices.push(index);
+        }
+    });
+    
+    testQuestions = Array.from(uniqueFlashcards.values());
+    
+    const questionCountSelect = document.getElementById('testQuestionsCount');
+    if (questionCountSelect && questionCountSelect.value !== 'all') {
+        const count = parseInt(questionCountSelect.value);
+        if (testQuestions.length > count) {
+            shuffleArray(testQuestions);
+            testQuestions = testQuestions.slice(0, count);
+        }
+    }
+    
+    testCounter = {
+        current: 1,
+        total: testQuestions.length,
+        correct: 0,
+        incorrect: 0
+    };
+    
+    updateTestCounter();
+}
+
+function setupTestCounter() {
+    const testContainer = document.getElementById('test');
+    if (!testContainer.querySelector('#testCounter')) {
+        const counterDiv = document.createElement('div');
+        counterDiv.id = 'testCounter';
+        counterDiv.className = 'test-counter';
+        const settings = testContainer.querySelector('.test-settings');
+        if (settings) testContainer.insertBefore(counterDiv, settings.nextSibling);
+    }
+    updateTestCounter();
+}
+
+function updateTestCounter() {
+    const counterContainer = document.getElementById('testCounter');
+    if (!counterContainer) return;
+    
+    counterContainer.innerHTML = `
+        <div class="counter-item">
+            <span class="counter-value">${testCounter.current}</span>
+            <span class="counter-label">Pytanie</span>
+        </div>
+        <div class="counter-item">
+            <span class="counter-value">${testCounter.total}</span>
+            <span class="counter-label">Wszystkich</span>
+        </div>
+        <div class="counter-item">
+            <span class="counter-value">${testCounter.correct}</span>
+            <span class="counter-label">Poprawne</span>
+        </div>
+        <div class="counter-item">
+            <span class="counter-value">${testCounter.incorrect}</span>
+            <span class="counter-label">Błędne</span>
+        </div>
+    `;
+}
+
 function displayTestQuestion() {
+    setupTestCounter();
+    
     if (isReviewMode && currentTestQuestion >= reviewQuestions.length) {
         finishReview();
         return;
@@ -818,36 +1643,31 @@ function displayTestQuestion() {
 
     let question;
     if (isReviewMode) {
-        // W trybie poprawy używamy fiszki z obiektu błędnej odpowiedzi
         question = reviewQuestions[currentTestQuestion].flashcard;
     } else {
         question = testQuestions[currentTestQuestion];
     }
 
-    // Resetowanie feedbacku
     document.getElementById('writingFeedback').textContent = '';
     document.getElementById('multipleFeedback').textContent = '';
     document.getElementById('truefalseFeedback').textContent = '';
     
-    // Znajdź oryginalny indeks fiszki w temacie
-    const originalDeck = appData.decks.find(d => d.id === testDeck);
-    const originalTopic = originalDeck.topics.find(t => t.id === testTopic);
-    // question.originalIndices zawiera oryginalne indeksy fiszek odpowiadające temu pytaniu
+    const deckId = isReviewMode ? reviewQuestions[currentTestQuestion].deckId : 
+                   (testDeck === 'multiple' ? question.deckId : testDeck);
+    const topicId = isReviewMode ? reviewQuestions[currentTestQuestion].topicId : 
+                    (testDeck === 'multiple' ? question.topicId : testTopic);
+    
     currentTestFlashcardIndices = question.originalIndices ? [...question.originalIndices] : [];
-    // Dla kompatybilności starego kodu pozostawiam pojedynczy indeks (pierwszy)
     currentTestFlashcardIndex = currentTestFlashcardIndices.length ? currentTestFlashcardIndices[0] : -1;
     
-    // Pobierz poziom znajomości fiszki (używamy first index z currentTestFlashcardIndices)
     let knowledgeLevel = 'new';
     if (currentTestFlashcardIndex !== -1) {
-        knowledgeLevel = getKnowledgeLevel(testDeck, testTopic, currentTestFlashcardIndex);
+        knowledgeLevel = getKnowledgeLevel(deckId, topicId, currentTestFlashcardIndex);
     }
     
-    // Ustaw klasę dla poziomu wiedzy
     const levelClass = `level-${knowledgeLevel}`;
     const levelText = getLevelText(knowledgeLevel);
     
-    // Ustaw poziom wiedzy dla wszystkich trybów testowych
     document.getElementById('writingLevel').textContent = levelText;
     document.getElementById('writingLevel').className = `test-level-badge ${levelClass}`;
     document.getElementById('multipleLevel').textContent = levelText;
@@ -855,39 +1675,39 @@ function displayTestQuestion() {
     document.getElementById('truefalseLevel').textContent = levelText;
     document.getElementById('truefalseLevel').className = `test-level-badge ${levelClass}`;
     
+    testCounter.current = currentTestQuestion + 1;
+    updateTestCounter();
+    
     if (testMode === 'writing') {
         if (testLanguage === 'polish') {
-            document.getElementById('writingQuestion').textContent = `Jak po angielsku powiesz "${question.polish}"?`;
+            document.getElementById('writingQuestion').textContent = `Jak po angielsku powiesz "${question.flashcard.polish}"?`;
             document.getElementById('writingAnswer').placeholder = "Wpisz tłumaczenie angielskie...";
         } else {
-            document.getElementById('writingQuestion').textContent = `Jak po polsku powiesz "${question.english}"?`;
+            document.getElementById('writingQuestion').textContent = `Jak po polsku powiesz "${question.flashcard.english}"?`;
             document.getElementById('writingAnswer').placeholder = "Wpisz tłumaczenie polskie...";
         }
         document.getElementById('writingAnswer').value = '';
     } else if (testMode === 'multiple') {
         if (testLanguage === 'polish') {
-            document.getElementById('multipleQuestion').textContent = `Jak po angielsku powiesz "${question.polish}"?`;
+            document.getElementById('multipleQuestion').textContent = `Jak po angielsku powiesz "${question.flashcard.polish}"?`;
         } else {
-            document.getElementById('multipleQuestion').textContent = `Jak po polsku powiesz "${question.english}"?`;
+            document.getElementById('multipleQuestion').textContent = `Jak po polsku powiesz "${question.flashcard.english}"?`;
         }
         
-        // Dla trybu wielokrotnego wyboru, uwzględniamy wszystkie możliwe poprawne odpowiedzi
         let correctAnswers;
         if (testLanguage === 'polish') {
-            // question.englishs zawiera wszystkie możliwe angielskie tłumaczenia danego polskiego klucza
-            correctAnswers = question.englishs ? [...question.englishs] : [question.english];
+            correctAnswers = [question.flashcard.english];
         } else {
-            correctAnswers = question.polishes ? [...question.polishes] : [question.polish];
+            correctAnswers = [question.flashcard.polish];
         }
 
         const options = [...correctAnswers];
         
-        // Dodajemy opcje aż do 4
         while (options.length < 4) {
             const randomIndex = Math.floor(Math.random() * testQuestions.length);
             const randomOption = testLanguage === 'polish' 
-                ? (testQuestions[randomIndex].englishs ? testQuestions[randomIndex].englishs[0] : testQuestions[randomIndex].english) 
-                : (testQuestions[randomIndex].polishes ? testQuestions[randomIndex].polishes[0] : testQuestions[randomIndex].polish);
+                ? testQuestions[randomIndex].flashcard.english 
+                : testQuestions[randomIndex].flashcard.polish;
                 
             if (!options.includes(randomOption)) {
                 options.push(randomOption);
@@ -909,395 +1729,102 @@ function displayTestQuestion() {
         
         selectedOption = null;
     } else if (testMode === 'truefalse') {
-        // Dla trybu prawda/fałsz, uwzględniamy wszystkie możliwe tłumaczenia
         const isCorrect = Math.random() > 0.5;
         
         if (testLanguage === 'polish') {
-            // Dla poprawnej odpowiedzi wybieramy jedno z poprawnych tłumaczeń
-            const correctOptions = question.englishs && question.englishs.length ? question.englishs : [question.english];
             let displayedTranslation;
             if (isCorrect) {
-                displayedTranslation = correctOptions[Math.floor(Math.random() * correctOptions.length)];
+                displayedTranslation = question.flashcard.english;
             } else {
-                // Fałsz - wybierz losową angielską nazwę z innego pytania
                 do {
                     const randomQ = testQuestions[Math.floor(Math.random() * testQuestions.length)];
-                    displayedTranslation = randomQ.englishs && randomQ.englishs.length ? randomQ.englishs[0] : randomQ.english;
-                } while (correctOptions.includes(displayedTranslation));
+                    displayedTranslation = randomQ.flashcard.english;
+                } while (displayedTranslation === question.flashcard.english);
             }
 
-            document.getElementById('truefalseQuestion').textContent = `"${question.polish}" po angielsku to "${displayedTranslation}"`;
+            document.getElementById('truefalseQuestion').textContent = `"${question.flashcard.polish}" po angielsku to "${displayedTranslation}"`;
         } else {
-            const correctOptions = question.polishes && question.polishes.length ? question.polishes : [question.polish];
-            const displayedTranslation = isCorrect ? correctOptions[Math.floor(Math.random() * correctOptions.length)] : (testQuestions[Math.floor(Math.random() * testQuestions.length)].polish);
-            document.getElementById('truefalseQuestion').textContent = `"${question.english}" po polsku to "${displayedTranslation}"`;
+            let displayedTranslation;
+            if (isCorrect) {
+                displayedTranslation = question.flashcard.polish;
+            } else {
+                const randomQ = testQuestions[Math.floor(Math.random() * testQuestions.length)];
+                displayedTranslation = randomQ.flashcard.polish;
+            }
+            document.getElementById('truefalseQuestion').textContent = `"${question.flashcard.english}" po polsku to "${displayedTranslation}"`;
         }
         
         trueFalseAnswer = isCorrect;
+        
+        const options = document.querySelectorAll('.test-tf-option');
+        options.forEach(option => option.classList.remove('selected'));
     }
 }
 
-// Pobierz poziom znajomości fiszki
-function getKnowledgeLevel(deckId, topicId, flashcardIndex) {
-    if (userProgress.decks[deckId] && 
-        userProgress.decks[deckId][topicId] && 
-        userProgress.decks[deckId][topicId][flashcardIndex] !== undefined) {
-        return userProgress.decks[deckId][topicId][flashcardIndex];
-    }
-    return 'new';
-}
-
-// Pobierz tekst poziomu znajomości
-function getLevelText(level) {
-    switch(level) {
-        case 'new': return 'Nowe';
-        case 'learning': return 'Uczę się';
-        case 'almost': return 'Prawie umiem';
-        case 'mastered': return 'Umiem';
-        default: return 'Nowe';
-    }
-}
-
-// Obsługa obracania fiszki
-function flipCard() {
-    document.getElementById('flashcard').classList.toggle('flipped');
-}
-
-// Ustawianie poziomu znajomości fiszki z spaced repetition
-function setKnowledgeLevel(level) {
-    if (currentFlashcards.length === 0) return;
-
-    const flashcard = currentFlashcards[currentFlashcardIndex];
-    
-    // Jeśli to zgrupowana fiszka, ustaw poziom dla wszystkich oryginalnych indeksów
-    if (flashcard.originalIndices) {
-        flashcard.originalIndices.forEach(originalIndex => {
-            setKnowledgeLevelForCard(originalIndex, level);
-        });
-    } else {
-        // Znajdź oryginalny indeks fiszki w temacie
-        const originalDeck = appData.decks.find(d => d.id === currentDeck);
-        const originalTopic = originalDeck.topics.find(t => t.id === currentTopic);
-        const originalIndex = originalTopic.flashcards.findIndex(f => 
-            f.polish === flashcard.polish && f.english === flashcard.english
-        );
-        setKnowledgeLevelForCard(originalIndex, level);
-    }
-    
-    saveUserProgress();
-    updateStats();
-    updateStudyStats();
-    updateQuickStats();
-    checkAchievements();
-    
-    // Jeśli jesteśmy w trybie "tylko do nauki" i ustawiliśmy poziom na "umiem",
-    // przejdź do następnej fiszki i odśwież listę
-    if (studyMode === 'toLearn' && level === 'mastered') {
-        // Usuń bieżącą fiszkę z listy (jeśli jest opanowana)
-        loadFilteredFlashcards();
-        
-        if (currentFlashcards.length === 0) {
-            // Brak więcej fiszek do nauki
-            displayCurrentFlashcard();
-            return;
-        }
-        
-        // Dostosuj indeks jeśli jest poza zakresem
-        if (currentFlashcardIndex >= currentFlashcards.length) {
-            currentFlashcardIndex = currentFlashcards.length - 1;
-        }
-        
-        displayCurrentFlashcard();
-    }
-}
-
-// Ustaw poziom wiedzy dla pojedynczej fiszki z spaced repetition
-function setKnowledgeLevelForCard(originalIndex, level) {
-    if (originalIndex === -1) return;
-
-    if (!userProgress.decks[currentDeck]) {
-        userProgress.decks[currentDeck] = {};
-    }
-    
-    if (!userProgress.decks[currentDeck][currentTopic]) {
-        userProgress.decks[currentDeck][currentTopic] = {};
-    }
-    
-    userProgress.decks[currentDeck][currentTopic][originalIndex] = level;
-    
-    // Ustaw datę następnej powtórki w spaced repetition
-    const nextReview = new Date();
-    nextReview.setDate(nextReview.getDate() + spacedRepetitionIntervals[level]);
-    
-    if (!userProgress.spacedRepetition) userProgress.spacedRepetition = {};
-    if (!userProgress.spacedRepetition[currentDeck]) userProgress.spacedRepetition[currentDeck] = {};
-    if (!userProgress.spacedRepetition[currentDeck][currentTopic]) userProgress.spacedRepetition[currentDeck][currentTopic] = {};
-    
-    userProgress.spacedRepetition[currentDeck][currentTopic][originalIndex] = nextReview.toISOString();
-}
-
-// Przejście do następnej fiszki
-function nextCard() {
-    if (currentFlashcards.length === 0) return;
-    
-    currentFlashcardIndex = (currentFlashcardIndex + 1) % currentFlashcards.length;
-    displayCurrentFlashcard();
-}
-
-// Przejście do poprzedniej fiszki
-function prevCard() {
-    if (currentFlashcards.length === 0) return;
-    
-    currentFlashcardIndex = (currentFlashcardIndex - 1 + currentFlashcards.length) % currentFlashcards.length;
-    displayCurrentFlashcard();
-}
-
-// Wybór zestawu do nauki
-function selectDeck() {
-    showSection('decks');
-}
-
-// Wybór zestawu do testu - pokazuje wybór tematów
-function selectTestDeck() {
-    showTestTopicSelection();
-}
-
-// Pokaż wybór tematów do testu
-function showTestTopicSelection() {
-    const topicsContainer = document.getElementById('testTopicsContainer');
-    topicsContainer.innerHTML = '';
-    
-    // Zgrupuj tematy według działów
-    const groupedTopics = {};
-    appData.decks.forEach(deck => {
-        if (!groupedTopics[deck.id]) {
-            groupedTopics[deck.id] = {
-                deckName: deck.name,
-                topics: []
-            };
-        }
-        
-        deck.topics.forEach(topic => {
-            groupedTopics[deck.id].topics.push({
-                deckId: deck.id,
-                topicId: topic.id,
-                topicName: topic.name,
-                flashcardCount: topic.flashcards.length
-            });
-        });
-    });
-    
-    // Wyświetl działy ze zwijanymi tematami
-    Object.keys(groupedTopics).forEach(deckId => {
-        const deckData = groupedTopics[deckId];
-        
-        // Utwórz kontener dla działu
-        const deckContainer = document.createElement('div');
-        deckContainer.className = 'test-deck-container';
-        
-        // Nagłówek działu (klikalny)
-        const deckHeader = document.createElement('div');
-        deckHeader.className = 'test-deck-header';
-        deckHeader.innerHTML = `
-            <i class="fas fa-chevron-right deck-chevron"></i>
-            <span>${deckData.deckName}</span>
-            <small>${deckData.topics.length} tematów</small>
-        `;
-        
-        // Kontener z tematami (początkowo ukryty)
-        const topicsListContainer = document.createElement('div');
-        topicsListContainer.className = 'test-topics-list collapsed';
-        
-        // Dodaj tematy do kontenera
-        deckData.topics.forEach(topic => {
-            const topicElement = document.createElement('div');
-            topicElement.className = 'topic-item';
-            
-            // Pobierz informacje o deadline dla tematu
-            const deadlineInfo = getDeadlineInfo(topic.deckId, topic.topicId);
-            const deadlineHtml = deadlineInfo ? `
-                <small class="test-topic-deadline ${deadlineInfo.colorClass}">
-                    <i class="fas fa-clock"></i> ${deadlineInfo.text}
-                </small>
-            ` : '';
-            
-            topicElement.innerHTML = `
-                <div>${topic.topicName}</div>
-                <div class="topic-details">
-                    <small>${topic.flashcardCount} fiszek</small>
-                    ${deadlineHtml}
-                </div>
-            `;
-            topicElement.onclick = () => selectTestTopic(topic.deckId, topic.topicId);
-            topicsListContainer.appendChild(topicElement);
-        });
-        
-        // Obsługa kliknięcia w nagłówek działu (rozwijanie/zwijanie)
-        deckHeader.onclick = () => {
-            const chevron = deckHeader.querySelector('.deck-chevron');
-            if (topicsListContainer.classList.contains('collapsed')) {
-                topicsListContainer.classList.remove('collapsed');
-                chevron.classList.add('rotated');
-            } else {
-                topicsListContainer.classList.add('collapsed');
-                chevron.classList.remove('rotated');
-            }
-        };
-        
-        deckContainer.appendChild(deckHeader);
-        deckContainer.appendChild(topicsListContainer);
-        topicsContainer.appendChild(deckContainer);
-    });
-    
-    // Pokaż kontener wyboru tematów
-    document.getElementById('testTopicSelection').style.display = 'block';
-}
-
-// Ustawianie trybu testu
-function setTestMode(mode) {
-    testMode = mode;
-    
-    // Ukrywanie wszystkich kontenerów testowych
-    document.getElementById('writingTest').style.display = 'none';
-    document.getElementById('multipleTest').style.display = 'none';
-    document.getElementById('truefalseTest').style.display = 'none';
-    
-    // Pokazywanie wybranego kontenera testowego
-    if (mode === 'writing') {
-        document.getElementById('writingTest').style.display = 'block';
-    } else if (mode === 'multiple') {
-        document.getElementById('multipleTest').style.display = 'block';
-    } else if (mode === 'truefalse') {
-        document.getElementById('truefalseTest').style.display = 'block';
-    }
-    
-    // Jeśli są już załadowane pytania, zaktualizuj widok
-    if (testQuestions.length > 0) {
-        // Przy każdej zmianie trybu testu przetasuj pytania, by kolejność była losowa
-        shuffleArray(testQuestions);
-        displayTestQuestion();
-    }
-}
-
-// Wybór opcji w trybie wielokrotnego wyboru
 function selectMultipleOption(index) {
     selectedOption = index;
     
-    // Wizualne zaznaczenie wybranej opcji
     const options = document.querySelectorAll('#multipleOptions .test-option');
     options.forEach((opt, i) => {
-        if (i === index) {
-            opt.classList.add('selected');
-        } else {
-            opt.classList.remove('selected');
-        }
+        opt.classList.toggle('selected', i === index);
     });
 }
 
-// Wybór odpowiedzi w trybie prawda/fałsz
 function selectTrueFalse(answer) {
     trueFalseAnswer = answer;
     
-    // Wizualne zaznaczenie wybranej opcji
-    const trueOption = document.querySelector('.test-tf-option.true');
-    const falseOption = document.querySelector('.test-tf-option.false');
-    
-    trueOption.classList.toggle('selected', answer === true);
-    falseOption.classList.toggle('selected', answer === false);
+    const options = document.querySelectorAll('.test-tf-option');
+    options.forEach(option => {
+        const isTrue = option.classList.contains('true');
+        option.classList.toggle('selected', (isTrue && answer) || (!isTrue && !answer));
+    });
 }
 
-// Obsługa klawisza Enter w testach
-function handleTestEnterKey(event) {
-    // Sprawdź czy jesteśmy w sekcji testów
-    const testSection = document.getElementById('test');
-    if (!testSection || !testSection.classList.contains('active')) return;
-    
-    // Sprawdź czy naciśnięto Enter
-    if (event.key !== 'Enter') return;
-    
-    // Zapobiegaj domyślnej akcji
-    event.preventDefault();
-    
-    // Wywołaj odpowiednią funkcję sprawdzania w zależności od trybu testu
-    if (testMode === 'writing') {
-        const writingTest = document.getElementById('writingTest');
-        if (writingTest && writingTest.style.display !== 'none') {
-            checkWritingAnswer();
-        }
-    } else if (testMode === 'multiple') {
-        const multipleTest = document.getElementById('multipleTest');
-        if (multipleTest && multipleTest.style.display !== 'none') {
-            checkMultipleAnswer();
-        }
-    } else if (testMode === 'truefalse') {
-        const truefalseTest = document.getElementById('truefalseTest');
-        if (truefalseTest && truefalseTest.style.display !== 'none') {
-            checkTrueFalseAnswer();
-        }
-    }
-}
-
-// Sprawdzanie odpowiedzi w trybie pisania
 function checkWritingAnswer() {
-    const answer = document.getElementById('writingAnswer').value.trim().toLowerCase();
+    const answer = document.getElementById('writingAnswer').value.trim();
     
-    // Sprawdź czy test jest aktywny
     if ((!isReviewMode && currentTestQuestion >= testQuestions.length) || 
         (isReviewMode && currentTestQuestion >= reviewQuestions.length)) {
         return;
     }
     
-    let correctAnswers;
-    let correctAnswersOriginal; // Oryginalna wersja z dużymi literami do wyświetlenia
+    let correctAnswer;
     if (isReviewMode) {
         const reviewItem = reviewQuestions[currentTestQuestion];
-        if (reviewItem && reviewItem.correctAnswersArray && reviewItem.correctAnswersArray.length) {
-            correctAnswersOriginal = [...reviewItem.correctAnswersArray];
-            correctAnswers = reviewItem.correctAnswersArray.map(a => a.toLowerCase());
-        } else if (reviewItem && reviewItem.correctAnswer) {
-            // fallback: rozbijamy zapisany string 'a / b / c'
-            correctAnswersOriginal = reviewItem.correctAnswer.split('/').map(a => a.trim());
-            correctAnswers = correctAnswersOriginal.map(a => a.toLowerCase());
-        } else {
-            correctAnswers = [];
-            correctAnswersOriginal = [];
-        }
+        correctAnswer = reviewItem.correctAnswer;
     } else {
         const currentFlashcard = testQuestions[currentTestQuestion];
-        if (!currentFlashcard) {
-            return; // Zabezpieczenie przed undefined
-        }
-        if (testLanguage === 'polish') {
-            correctAnswersOriginal = currentFlashcard.englishs || [currentFlashcard.english];
-            correctAnswers = correctAnswersOriginal.map(a => a.toLowerCase());
-        } else {
-            correctAnswersOriginal = currentFlashcard.polishes || [currentFlashcard.polish];
-            correctAnswers = correctAnswersOriginal.map(a => a.toLowerCase());
-        }
+        correctAnswer = testLanguage === 'polish' 
+            ? currentFlashcard.flashcard.english 
+            : currentFlashcard.flashcard.polish;
     }
         
     const feedback = document.getElementById('writingFeedback');
     
-    if (correctAnswers.includes(answer)) {
-        testResults.correct++;
-        feedback.textContent = 'Poprawna odpowiedź!';
+    if (answer.toLowerCase() === correctAnswer.toLowerCase()) {
+        feedback.textContent = '✅ Poprawna odpowiedź!';
         feedback.className = 'test-feedback correct';
+        testCounter.correct++;
+        testResults.correct++;
+        updateTestCounter();
         updateKnowledgeLevelAfterTest(true);
     } else {
-        // Pokazujemy wszystkie poprawne odpowiedzi z oryginalnymi wielkimi literami
-        const correctAnswersText = correctAnswersOriginal.join(' lub ');
-        feedback.textContent = `Błędna odpowiedź. Poprawne odpowiedzi to: ${correctAnswersText}`;
+        feedback.textContent = `❌ Błędna odpowiedź. Poprawnie: ${correctAnswer}`;
         feedback.className = 'test-feedback incorrect';
+        testCounter.incorrect++;
+        updateTestCounter();
         updateKnowledgeLevelAfterTest(false);
         
         if (!isReviewMode) {
+            const currentQuestion = testQuestions[currentTestQuestion];
             incorrectAnswers.push({
-                flashcard: testQuestions[currentTestQuestion],
+                flashcard: currentQuestion.flashcard,
                 userAnswer: answer,
-                correctAnswer: correctAnswersOriginal.join(' / '), // Zapisujemy wszystkie poprawne odpowiedzi z oryginalnymi wielkimi literami
-                correctAnswersArray: [...correctAnswersOriginal],
+                correctAnswer: correctAnswer,
                 questionType: 'writing',
-                originalIndices: testQuestions[currentTestQuestion].originalIndices ? [...testQuestions[currentTestQuestion].originalIndices] : []
+                deckId: testDeck === 'multiple' ? currentQuestion.deckId : testDeck,
+                topicId: testDeck === 'multiple' ? currentQuestion.topicId : testTopic,
+                originalIndices: currentQuestion.originalIndices
             });
         }
     }
@@ -1305,17 +1832,15 @@ function checkWritingAnswer() {
     setTimeout(() => {
         currentTestQuestion++;
         displayTestQuestion();
-    }, 2000);
+    }, 1500);
 }
 
-// Sprawdzanie odpowiedzi w trybie wielokrotnego wyboru
 function checkMultipleAnswer() {
     if (selectedOption === null) {
         showNotification('Wybierz odpowiedź!', 'error');
         return;
     }
     
-    // Sprawdź czy test jest aktywny
     if ((!isReviewMode && currentTestQuestion >= testQuestions.length) || 
         (isReviewMode && currentTestQuestion >= reviewQuestions.length)) {
         return;
@@ -1324,55 +1849,43 @@ function checkMultipleAnswer() {
     const options = document.querySelectorAll('#multipleOptions .test-option');
     const selectedText = options[selectedOption].textContent;
     
-    let correctAnswers;
-    let correctAnswersOriginal; // Oryginalna wersja z dużymi literami do wyświetlenia
+    let correctAnswer;
     if (isReviewMode) {
         const reviewItem = reviewQuestions[currentTestQuestion];
-        if (reviewItem && reviewItem.correctAnswersArray && reviewItem.correctAnswersArray.length) {
-            correctAnswersOriginal = [...reviewItem.correctAnswersArray];
-            correctAnswers = reviewItem.correctAnswersArray.map(a => a.toLowerCase());
-        } else if (reviewItem && reviewItem.correctAnswer) {
-            correctAnswersOriginal = reviewItem.correctAnswer.split('/').map(a => a.trim());
-            correctAnswers = correctAnswersOriginal.map(a => a.toLowerCase());
-        } else {
-            correctAnswers = [];
-            correctAnswersOriginal = [];
-        }
+        correctAnswer = reviewItem.correctAnswer;
     } else {
         const currentFlashcard = testQuestions[currentTestQuestion];
-        if (!currentFlashcard) {
-            return; // Zabezpieczenie przed undefined
-        }
-        if (testLanguage === 'polish') {
-            correctAnswersOriginal = currentFlashcard.englishs ? [...currentFlashcard.englishs] : [currentFlashcard.english];
-            correctAnswers = correctAnswersOriginal.map(a => a.toLowerCase());
-        } else {
-            correctAnswersOriginal = currentFlashcard.polishes ? [...currentFlashcard.polishes] : [currentFlashcard.polish];
-            correctAnswers = correctAnswersOriginal.map(a => a.toLowerCase());
-        }
+        correctAnswer = testLanguage === 'polish' 
+            ? currentFlashcard.flashcard.english 
+            : currentFlashcard.flashcard.polish;
     }
         
     const feedback = document.getElementById('multipleFeedback');
     
-    if (correctAnswers.includes(selectedText.toLowerCase())) {
-        testResults.correct++;
-        feedback.textContent = 'Poprawna odpowiedź!';
+    if (selectedText.toLowerCase() === correctAnswer.toLowerCase()) {
+        feedback.textContent = '✅ Poprawna odpowiedź!';
         feedback.className = 'test-feedback correct';
+        testCounter.correct++;
+        testResults.correct++;
+        updateTestCounter();
         updateKnowledgeLevelAfterTest(true);
     } else {
-        const correctAnswersText = correctAnswersOriginal.join(' lub ');
-        feedback.textContent = `Błędna odpowiedź. Poprawne odpowiedzi to: ${correctAnswersText}`;
+        feedback.textContent = `❌ Błędna odpowiedź. Poprawnie: ${correctAnswer}`;
         feedback.className = 'test-feedback incorrect';
+        testCounter.incorrect++;
+        updateTestCounter();
         updateKnowledgeLevelAfterTest(false);
         
         if (!isReviewMode) {
+            const currentQuestion = testQuestions[currentTestQuestion];
             incorrectAnswers.push({
-                flashcard: testQuestions[currentTestQuestion],
+                flashcard: currentQuestion.flashcard,
                 userAnswer: selectedText,
-                correctAnswer: correctAnswersOriginal.join(' / '),
-                correctAnswersArray: [...correctAnswersOriginal],
+                correctAnswer: correctAnswer,
                 questionType: 'multiple',
-                originalIndices: testQuestions[currentTestQuestion].originalIndices ? [...testQuestions[currentTestQuestion].originalIndices] : []
+                deckId: testDeck === 'multiple' ? currentQuestion.deckId : testDeck,
+                topicId: testDeck === 'multiple' ? currentQuestion.topicId : testTopic,
+                originalIndices: currentQuestion.originalIndices
             });
         }
     }
@@ -1380,53 +1893,53 @@ function checkMultipleAnswer() {
     setTimeout(() => {
         currentTestQuestion++;
         displayTestQuestion();
-    }, 2000);
+    }, 1500);
 }
 
-// Sprawdzanie odpowiedzi w trybie prawda/fałsz
 function checkTrueFalseAnswer() {
     if (trueFalseAnswer === null) {
         showNotification('Wybierz odpowiedź!', 'error');
         return;
     }
     
-    // Sprawdź czy test jest aktywny
     if ((!isReviewMode && currentTestQuestion >= testQuestions.length) || 
         (isReviewMode && currentTestQuestion >= reviewQuestions.length)) {
         return;
     }
     
-    // W trybie true/false odpowiedź jest zapisana w zmiennej trueFalseAnswer
-    const feedback = document.getElementById('truefalseFeedback');
-    
-    // Pobierz poprawne tłumaczenie w zależności od trybu
     let isCorrectAnswer;
     if (isReviewMode) {
-        // W trybie poprawy używamy zapisanej poprawnej odpowiedzi
         isCorrectAnswer = reviewQuestions[currentTestQuestion].correctAnswer === 'Prawda';
     } else {
-        // W normalnym trybie używamy aktualnego pytanie
         isCorrectAnswer = trueFalseAnswer;
     }
     
+    const feedback = document.getElementById('truefalseFeedback');
+    
     if (trueFalseAnswer === isCorrectAnswer) {
-        testResults.correct++;
-        feedback.textContent = 'Poprawna odpowiedź!';
+        feedback.textContent = '✅ Poprawna odpowiedź!';
         feedback.className = 'test-feedback correct';
+        testCounter.correct++;
+        testResults.correct++;
+        updateTestCounter();
         updateKnowledgeLevelAfterTest(true);
     } else {
-        feedback.textContent = 'Błędna odpowiedź!';
+        feedback.textContent = '❌ Błędna odpowiedź!';
         feedback.className = 'test-feedback incorrect';
+        testCounter.incorrect++;
+        updateTestCounter();
         updateKnowledgeLevelAfterTest(false);
         
-        // Zapisz błędną odpowiedź do późniejszej poprawy (tylko w normalnym trybie)
         if (!isReviewMode) {
+            const currentQuestion = testQuestions[currentTestQuestion];
             incorrectAnswers.push({
-                flashcard: testQuestions[currentTestQuestion],
+                flashcard: currentQuestion.flashcard,
                 userAnswer: trueFalseAnswer ? 'Prawda' : 'Fałsz',
                 correctAnswer: isCorrectAnswer ? 'Prawda' : 'Fałsz',
                 questionType: 'truefalse',
-                originalIndices: testQuestions[currentTestQuestion].originalIndices ? [...testQuestions[currentTestQuestion].originalIndices] : []
+                deckId: testDeck === 'multiple' ? currentQuestion.deckId : testDeck,
+                topicId: testDeck === 'multiple' ? currentQuestion.topicId : testTopic,
+                originalIndices: currentQuestion.originalIndices
             });
         }
     }
@@ -1434,13 +1947,14 @@ function checkTrueFalseAnswer() {
     setTimeout(() => {
         currentTestQuestion++;
         displayTestQuestion();
-    }, 2000);
+    }, 1500);
 }
 
-// Aktualizacja poziomu wiedzy po teście
 function updateKnowledgeLevelAfterTest(isCorrect) {
-    // Wspieramy wiele oryginalnych indeksów (gdy pytanie reprezentuje kilka fiszek)
-    const indices = (currentTestFlashcardIndices && currentTestFlashcardIndices.length) ? currentTestFlashcardIndices : (currentTestFlashcardIndex !== -1 ? [currentTestFlashcardIndex] : []);
+    if (!testDeck || testDeck === 'multiple') return;
+    
+    const indices = currentTestFlashcardIndices.length ? currentTestFlashcardIndices : 
+                   (currentTestFlashcardIndex !== -1 ? [currentTestFlashcardIndex] : []);
     if (indices.length === 0) return;
 
     if (!userProgress.decks[testDeck]) userProgress.decks[testDeck] = {};
@@ -1468,13 +1982,14 @@ function updateKnowledgeLevelAfterTest(isCorrect) {
 
         userProgress.decks[testDeck][testTopic][idx] = newLevel;
         
-        // Aktualizuj spaced repetition
         const nextReview = new Date();
         nextReview.setDate(nextReview.getDate() + spacedRepetitionIntervals[newLevel]);
         
         if (!userProgress.spacedRepetition) userProgress.spacedRepetition = {};
         if (!userProgress.spacedRepetition[testDeck]) userProgress.spacedRepetition[testDeck] = {};
-        if (!userProgress.spacedRepetition[testDeck][testTopic]) userProgress.spacedRepetition[testDeck][testTopic] = {};
+        if (!userProgress.spacedRepetition[testDeck][testTopic]) {
+            userProgress.spacedRepetition[testDeck][testTopic] = {};
+        }
         
         userProgress.spacedRepetition[testDeck][testTopic][idx] = nextReview.toISOString();
     });
@@ -1485,21 +2000,33 @@ function updateKnowledgeLevelAfterTest(isCorrect) {
     checkAchievements();
 }
 
-// Zakończenie testu
 function finishTest() {
-    document.getElementById('correctAnswers').textContent = testResults.correct;
-    document.getElementById('totalQuestions').textContent = testResults.total;
+    testEndTime = new Date();
+    const testTime = testEndTime - testStartTime;
+    const seconds = Math.floor(testTime / 1000);
     
-    // Jeśli są błędne odpowiedzi, pokaż listę do poprawy
+    document.getElementById('correctAnswers').textContent = testResults.correct;
+    document.getElementById('incorrectAnswers').textContent = testResults.total - testResults.correct;
+    document.getElementById('totalQuestions').textContent = testResults.total;
+    document.getElementById('scoreValue').textContent = testResults.correct;
+    document.getElementById('percentageScore').textContent = `${Math.round((testResults.correct / testResults.total) * 100)}%`;
+    document.getElementById('testTime').textContent = `${seconds}s`;
+    
     if (incorrectAnswers.length > 0) {
         showIncorrectAnswersList();
         document.getElementById('incorrectAnswersList').style.display = 'block';
     }
     
     document.getElementById('testResult').style.display = 'block';
+    logActivity('test', { 
+        correct: testResults.correct, 
+        total: testResults.total, 
+        time: seconds,
+        deck: testDeck,
+        topic: testTopic 
+    });
 }
 
-// Wyświetl listę błędnych odpowiedzi
 function showIncorrectAnswersList() {
     const container = document.getElementById('incorrectAnswersContainer');
     container.innerHTML = '';
@@ -1510,9 +2037,9 @@ function showIncorrectAnswersList() {
         
         let questionText = '';
         if (testLanguage === 'polish') {
-            questionText = `"${item.flashcard.polish}" → ${item.correctAnswer}`;
+            questionText = `"${item.flashcard.polish}"`;
         } else {
-            questionText = `"${item.flashcard.english}" → ${item.correctAnswer}`;
+            questionText = `"${item.flashcard.english}"`;
         }
         
         answerItem.innerHTML = `
@@ -1525,79 +2052,97 @@ function showIncorrectAnswersList() {
     });
 }
 
-// Rozpocznij poprawę błędnych odpowiedzi
+function toggleIncorrectList() {
+    const container = document.getElementById('incorrectAnswersContainer');
+    const toggleBtn = document.querySelector('#incorrectAnswersList .btn-small i');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        toggleBtn.className = 'fas fa-chevron-up';
+    } else {
+        container.style.display = 'none';
+        toggleBtn.className = 'fas fa-chevron-down';
+    }
+}
+
 function reviewIncorrectAnswers() {
     isReviewMode = true;
     reviewQuestions = [...incorrectAnswers];
-    // Tasuj kolejność pytań do poprawy
     shuffleArray(reviewQuestions);
     currentTestQuestion = 0;
-    testResults.correct = testResults.correct; // Zachowujemy dotychczasowy wynik
+    testResults.correct = 0;
+    testResults.total = reviewQuestions.length;
+    testCounter.correct = 0;
+    testCounter.incorrect = 0;
+    testCounter.total = reviewQuestions.length;
+    testCounter.current = 1;
+    updateTestCounter();
+    
     document.getElementById('testResult').style.display = 'none';
-    document.getElementById('testTitle').textContent = `Poprawa błędów: ${testDeck} - ${testTopic}`;
+    document.getElementById('testTitle').textContent = `Poprawa błędów: ${testDeck === 'multiple' ? 'Wiele tematów' : testDeck}`;
     displayTestQuestion();
 }
 
-// Zakończenie poprawy błędów
 function finishReview() {
-    // Po poprawie wszystkich błędnych odpowiedzi, zakończ test
     document.getElementById('correctAnswers').textContent = testResults.correct;
     document.getElementById('totalQuestions').textContent = testResults.total;
     document.getElementById('testResult').style.display = 'block';
     document.getElementById('incorrectAnswersList').style.display = 'none';
-    
-    // Wyczyść listę błędnych odpowiedzi po poprawie
     incorrectAnswers = [];
+    isReviewMode = false;
 }
 
-// Resetowanie testu
 function resetTest() {
     isReviewMode = false;
     currentTestQuestion = 0;
     
-    // Przygotuj ponownie pytania (może się zmienić liczba jeśli tryb "tylko do nauki" jest aktywny)
-    prepareTestQuestions();
-    // Upewnij się, że przy restarcie testu pytania są w losowej kolejności
+    if (testDeck && testTopic) {
+        if (testDeck === 'multiple') {
+            prepareTestQuestionsFromFlashcards(getSelectedFlashcards());
+        } else {
+            prepareTestQuestions();
+        }
+    }
+    
     shuffleArray(testQuestions);
     
     testResults = { correct: 0, total: testQuestions.length };
+    testCounter.correct = 0;
+    testCounter.incorrect = 0;
+    testCounter.total = testQuestions.length;
+    testCounter.current = 1;
+    
     document.getElementById('testResult').style.display = 'none';
     document.getElementById('incorrectAnswersList').style.display = 'none';
     incorrectAnswers = [];
     
+    updateTestCounter();
     displayTestQuestion();
+    testStartTime = new Date();
 }
 
-// Aktualizacja statystyk
-function updateStats() {
-    // Obliczanie statystyk na podstawie postępów użytkownika
-    let total = 0;
-    let mastered = 0;
-    let learning = 0;
-    let newCards = 0;
+function getSelectedFlashcards() {
+    let allFlashcards = [];
     
-    for (const deck in userProgress.decks) {
-        for (const topic in userProgress.decks[deck]) {
-            for (const card in userProgress.decks[deck][topic]) {
-                total++;
-                const level = userProgress.decks[deck][topic][card];
-                if (level === 'mastered') mastered++;
-                else if (level === 'learning' || level === 'almost') learning++;
-                else newCards++;
-            }
+    selectedTopicsForTest.forEach(topicKey => {
+        const [deckId, topicId] = topicKey.split('-');
+        const deck = appData.decks.find(d => d.id === deckId);
+        const topic = deck.topics.find(t => t.id === topicId);
+        
+        if (deck && topic) {
+            allFlashcards = allFlashcards.concat(topic.flashcards.map((card, index) => ({
+                ...card,
+                deckId: deckId,
+                topicId: topicId,
+                originalIndex: index
+            })));
         }
-    }
+    });
     
-    document.getElementById('totalFlashcards').textContent = total;
-    document.getElementById('masteredFlashcards').textContent = mastered;
-    document.getElementById('learningFlashcards').textContent = learning;
-    document.getElementById('newFlashcards').textContent = newCards;
-    
-    document.getElementById('todayActivity').textContent = `Przećwiczyłeś ${userProgress.stats.today.count} fiszek przez ${userProgress.stats.today.time} minut`;
-    document.getElementById('learningStreak').textContent = `Uczysz się codziennie od ${userProgress.stats.streak} dni z rzędu!`;
+    return allFlashcards;
 }
 
-// Szybka powtórka - fiszki wymagające powtórki
+// ==================== SZYBKA POWTÓRKA ====================
 function startQuickStudy() {
     const dueFlashcards = getDueFlashcards();
     if (dueFlashcards.length === 0) {
@@ -1605,7 +2150,6 @@ function startQuickStudy() {
         return;
     }
     
-    // Przygotuj currentFlashcards z dueFlashcards
     currentFlashcards = dueFlashcards;
     currentFlashcardIndex = 0;
     currentDeck = null;
@@ -1613,30 +2157,26 @@ function startQuickStudy() {
     
     document.getElementById('studyTitle').textContent = 'Szybka powtórka';
     document.getElementById('deadlineInfo').style.display = 'none';
-    
-    // Ukryj zaawansowane filtry w trybie szybkiej powtórki
     document.getElementById('advancedFilters').style.display = 'none';
     document.getElementById('advancedFiltersToggle').classList.remove('btn-active');
     
     showSection('study');
     displayCurrentFlashcard();
     updateStudyStats();
+    logActivity('review', { count: dueFlashcards.length });
 }
 
-// Pobierz fiszki wymagające powtórki (spaced repetition)
 function getDueFlashcards() {
     const due = [];
     const today = new Date().toISOString().split('T')[0];
     
     if (!userProgress.spacedRepetition) return due;
     
-    // Przejdź przez wszystkie fiszki ze spaced repetition
     Object.keys(userProgress.spacedRepetition).forEach(deckId => {
         Object.keys(userProgress.spacedRepetition[deckId]).forEach(topicId => {
             Object.keys(userProgress.spacedRepetition[deckId][topicId]).forEach(cardIndex => {
                 const nextReview = userProgress.spacedRepetition[deckId][topicId][cardIndex];
-                if (nextReview <= today) {
-                    // Znajdź fiszkę w danych aplikacji
+                if (nextReview.split('T')[0] <= today) {
                     const deck = appData.decks.find(d => d.id === deckId);
                     if (deck) {
                         const topic = deck.topics.find(t => t.id === topicId);
@@ -1659,20 +2199,172 @@ function getDueFlashcards() {
     return due;
 }
 
-// Aktualizuj statystyki szybkiej powtórki
-function updateQuickStats() {
-    const dueCards = getDueFlashcards().length;
-    document.getElementById('quickStats').textContent = `${dueCards} fiszek do powtórki`;
+// ==================== STATYSTYKI ====================
+function updateStats() {
+    if (!userProgress) {
+        userProgress = {
+            decks: {},
+            stats: {
+                total: 0,
+                mastered: 0,
+                learning: 0,
+                new: 0,
+                today: { count: 0, study: 0, test: 0, review: 0 },
+                streak: 0,
+                lastStudyDate: null,
+                totalStudyTime: 0
+            },
+            deadlines: {},
+            spacedRepetition: {},
+            achievements: {},
+            activityLog: []
+        };
+    }
+
+    let total = 0;
+    let mastered = 0;
+    let learning = 0;
+    let newCards = 0;
+
+    appData.decks.forEach(deck => {
+        deck.topics.forEach(topic => {
+            total += topic.flashcards.length;
+            
+            topic.flashcards.forEach((flashcard, index) => {
+                const level = getKnowledgeLevel(deck.id, topic.id, index);
+                switch(level) {
+                    case 'mastered':
+                        mastered++;
+                        break;
+                    case 'learning':
+                    case 'almost':
+                        learning++;
+                        break;
+                    case 'new':
+                    default:
+                        newCards++;
+                        break;
+                }
+            });
+        });
+    });
+
+    document.getElementById('totalFlashcards').textContent = total;
+    document.getElementById('masteredFlashcards').textContent = mastered;
+    document.getElementById('learningFlashcards').textContent = learning;
+    document.getElementById('newFlashcards').textContent = newCards;
+
+    const today = new Date().toDateString();
+    const lastStudy = userProgress.stats.lastStudyDate;
+    
+    if (lastStudy && new Date(lastStudy).toDateString() === today) {
+        userProgress.stats.today.count++;
+    } else {
+        userProgress.stats.today.count = 1;
+        userProgress.stats.lastStudyDate = new Date().toISOString();
+        
+        if (lastStudy) {
+            const lastStudyDate = new Date(lastStudy);
+            const todayDate = new Date();
+            const diffTime = Math.abs(todayDate - lastStudyDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 1) {
+                userProgress.stats.streak++;
+            } else {
+                userProgress.stats.streak = 1;
+            }
+        } else {
+            userProgress.stats.streak = 1;
+        }
+    }
+
+    document.getElementById('todayActivity').textContent = 
+        `Przećwiczyłeś ${userProgress.stats.today.count} fiszek dzisiaj`;
+    
+    document.getElementById('learningStreak').textContent = 
+        `Uczysz się codziennie od ${userProgress.stats.streak} dni z rzędu!`;
+
+    document.getElementById('todayStudy').textContent = userProgress.stats.today.study || 0;
+    document.getElementById('todayTest').textContent = userProgress.stats.today.test || 0;
+    document.getElementById('todayReview').textContent = userProgress.stats.today.review || 0;
+    
+    document.getElementById('streakBadge').textContent = `${userProgress.stats.streak} dni`;
+
+    saveUserProgress();
+    updateStatsBadge();
 }
 
-// Sprawdź i odblokuj osiągnięcia
+function updateStatsBadge() {
+    const total = parseInt(document.getElementById('totalFlashcards').textContent) || 0;
+    const mastered = parseInt(document.getElementById('masteredFlashcards').textContent) || 0;
+    const progress = total > 0 ? Math.round((mastered / total) * 100) : 0;
+    
+    document.getElementById('statsBadge').textContent = `${progress}%`;
+}
+
+function updateStudyStats() {
+    if (!currentDeck || !currentTopic) return;
+    
+    const totalFlashcards = originalFlashcards.length;
+    const masteredFlashcards = originalFlashcards.filter(flashcard => {
+        const level = getKnowledgeLevel(currentDeck, currentTopic, flashcard.originalIndices[0]);
+        return level === 'mastered';
+    }).length;
+    
+    const toLearnFlashcards = totalFlashcards - masteredFlashcards;
+    const currentModeFlashcards = currentFlashcards.length;
+    
+    let statsContainer = document.getElementById('studyStats');
+    if (!statsContainer) {
+        statsContainer = document.createElement('div');
+        statsContainer.id = 'studyStats';
+        statsContainer.className = 'study-stats-container';
+        const deadlineInfo = document.getElementById('deadlineInfo');
+        if (deadlineInfo) deadlineInfo.after(statsContainer);
+    }
+    
+    statsContainer.innerHTML = `
+        <div class="study-stat">
+            <i class="fas fa-layer-group study-stat-icon"></i>
+            <div class="study-stat-value">${totalFlashcards}</div>
+            <div class="study-stat-label">Wszystkie</div>
+        </div>
+        <div class="study-stat">
+            <i class="fas fa-check-circle study-stat-icon"></i>
+            <div class="study-stat-value">${masteredFlashcards}</div>
+            <div class="study-stat-label">Opanowane</div>
+        </div>
+        <div class="study-stat">
+            <i class="fas fa-book-open study-stat-icon"></i>
+            <div class="study-stat-value">${toLearnFlashcards}</div>
+            <div class="study-stat-label">Do nauki</div>
+        </div>
+        <div class="study-stat">
+            <i class="fas fa-filter study-stat-icon"></i>
+            <div class="study-stat-value">${currentModeFlashcards}</div>
+            <div class="study-stat-label">W trybie</div>
+        </div>
+    `;
+}
+
+function updateQuickStats() {
+    const dueCards = getDueFlashcards().length;
+    document.getElementById('quickStats').textContent = `${dueCards} fiszek`;
+    
+    document.getElementById('studyReadyCount').textContent = dueCards;
+    document.getElementById('totalDecksCount').textContent = appData.decks.length;
+}
+
+// ==================== OSIĄGNIĘCIA ====================
 function checkAchievements() {
     let masteredCount = 0;
+    let totalCount = 0;
     
-    // Policz opanowane fiszki
     for (const deck in userProgress.decks) {
         for (const topic in userProgress.decks[deck]) {
             for (const card in userProgress.decks[deck][topic]) {
+                totalCount++;
                 if (userProgress.decks[deck][topic][card] === 'mastered') {
                     masteredCount++;
                 }
@@ -1680,7 +2372,6 @@ function checkAchievements() {
         }
     }
     
-    // Sprawdź osiągnięcia
     if (masteredCount >= 1 && !userProgress.achievements.firstMaster) {
         unlockAchievement('firstMaster');
     }
@@ -1693,13 +2384,13 @@ function checkAchievements() {
         unlockAchievement('streak7');
     }
     
-    // Sprawdź czy użytkownik opanował 10 fiszek dzisiaj
     if (userProgress.stats.today.count >= 10 && !userProgress.achievements.quickLearner) {
         unlockAchievement('quickLearner');
     }
+    
+    updateAchievementsView();
 }
 
-// Odblokuj osiągnięcie
 function unlockAchievement(achievementKey) {
     if (!userProgress.achievements[achievementKey]) {
         userProgress.achievements[achievementKey] = true;
@@ -1707,40 +2398,43 @@ function unlockAchievement(achievementKey) {
         
         const achievement = achievements[achievementKey];
         showNotification(`🎉 Osiągnięcie odblokowane: ${achievement.name} - ${achievement.desc}`, 'success');
-        
-        // Odśwież widok osiągnięć
-        updateAchievementsView();
     }
 }
 
-// Aktualizuj widok osiągnięć
 function updateAchievementsView() {
     const container = document.getElementById('achievementsList');
     if (!container) return;
     
     container.innerHTML = '';
     
+    let unlockedCount = 0;
     Object.keys(achievements).forEach(key => {
         const achievement = achievements[key];
         const isUnlocked = userProgress.achievements[key];
         
+        if (isUnlocked) unlockedCount++;
+        
         const achievementElement = document.createElement('div');
         achievementElement.className = `achievement ${isUnlocked ? 'unlocked' : 'locked'}`;
         achievementElement.innerHTML = `
-            <i class="fas ${isUnlocked ? 'fa-trophy' : 'fa-lock'}"></i>
-            <span>${achievement.name} - ${achievement.desc}</span>
+            <i class="${achievement.icon}"></i>
+            <div class="achievement-info">
+                <strong>${achievement.name}</strong>
+                <small>${achievement.desc}</small>
+            </div>
         `;
         
         container.appendChild(achievementElement);
     });
+    
+    document.getElementById('achievementsCount').textContent = `${unlockedCount}/${Object.keys(achievements).length}`;
 }
 
-// Obsługa uploadu plików
+// ==================== IMPORT/EXPORT ====================
 function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Sprawdź rozszerzenie pliku
     if (!file.name.toLowerCase().endsWith('.txt')) {
         showNotification('Proszę wybrać plik z rozszerzeniem .txt', 'error');
         return;
@@ -1748,8 +2442,7 @@ function handleFileUpload(event) {
     
     const reader = new FileReader();
     reader.onload = function(e) {
-        const content = e.target.result;
-        processUploadedFile(content, file.name);
+        processUploadedFile(e.target.result, file.name);
     };
     reader.onerror = function() {
         showNotification('Błąd podczas czytania pliku', 'error');
@@ -1757,7 +2450,6 @@ function handleFileUpload(event) {
     reader.readAsText(file);
 }
 
-// Przetwarzanie przesłanego pliku
 function processUploadedFile(content, fileName) {
     try {
         const lines = content.split('\n');
@@ -1778,7 +2470,11 @@ function processUploadedFile(content, fileName) {
         
         if (flashcards.length > 0) {
             showNotification(`Pomyślnie zaimportowano ${flashcards.length} fiszek z pliku ${fileName}`, 'success');
-            // Tutaj można dodać logikę zapisywania zaimportowanych fiszek
+            
+            document.getElementById('filePreview').style.display = 'block';
+            document.getElementById('fileName').textContent = fileName;
+            document.getElementById('fileLines').textContent = flashcards.length;
+            document.getElementById('fileContent').textContent = content.substring(0, 500) + (content.length > 500 ? '...' : '');
         } else {
             showNotification('Nie udało się zaimportować żadnych fiszek. Sprawdź format pliku.', 'error');
         }
@@ -1787,7 +2483,6 @@ function processUploadedFile(content, fileName) {
     }
 }
 
-// Tworzenie nowego działu
 function createNewDeck() {
     const deckName = document.getElementById('newDeckName').value.trim();
     const topicName = document.getElementById('newTopicName').value.trim();
@@ -1797,15 +2492,33 @@ function createNewDeck() {
         return;
     }
     
-    // Tutaj można dodać logikę tworzenia nowego działu i tematu
-    showNotification(`Utworzono nowy dział: ${deckName} z tematem: ${topicName}`, 'success');
+    const newDeckId = deckName.toLowerCase().replace(/\s+/g, '-');
+    const newTopicId = topicName.toLowerCase().replace(/\s+/g, '-');
     
-    // Czyszczenie pól formularza
+    const newDeck = {
+        id: newDeckId,
+        name: deckName,
+        icon: 'fas fa-folder',
+        description: document.getElementById('deckDescription').value.trim() || 'Nowy zestaw fiszek',
+        topics: [
+            {
+                id: newTopicId,
+                name: topicName,
+                flashcards: []
+            }
+        ]
+    };
+    
+    appData.decks.push(newDeck);
+    
     document.getElementById('newDeckName').value = '';
     document.getElementById('newTopicName').value = '';
+    document.getElementById('deckDescription').value = '';
+    
+    loadDecks();
+    showNotification(`Utworzono nowy dział: ${deckName} z tematem: ${topicName}`, 'success');
 }
 
-// Eksport postępów
 function exportProgress() {
     try {
         const dataStr = JSON.stringify(userProgress, null, 2);
@@ -1822,7 +2535,7 @@ function exportProgress() {
     }
 }
 
-// Wyświetl notyfikację
+// ==================== NOTYFIKACJE ====================
 function showNotification(message, type = 'info') {
     const container = document.getElementById('notificationsContainer');
     if (!container) return;
@@ -1833,7 +2546,6 @@ function showNotification(message, type = 'info') {
     
     container.appendChild(notification);
     
-    // Automatyczne usuwanie po 5 sekundach
     setTimeout(() => {
         if (notification.parentNode) {
             notification.parentNode.removeChild(notification);
@@ -1841,33 +2553,89 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-// Obsługa błędów
+// ==================== BŁĘDY ====================
 function handleError(error, context) {
     console.error(`Błąd w ${context}:`, error);
     showNotification(`Wystąpił błąd: ${error.message}`, 'error');
 }
 
-// Podstawowe funkcje nawigacyjne
+// ==================== NAVIGATION ====================
 function showSection(sectionId) {
     document.querySelectorAll('.section').forEach(section => {
         section.classList.remove('active');
     });
     document.getElementById(sectionId).classList.add('active');
+    
+    if (sectionId === 'stats') {
+        updateStats();
+        updateAchievementsView();
+    }
+}
+
+function selectDeck() {
+    showSection('decks');
+}
+
+function showAbout() {
+    document.getElementById('aboutModal').style.display = 'block';
+    
+    const aboutStats = document.getElementById('aboutStats');
+    if (aboutStats) {
+        const total = parseInt(document.getElementById('totalFlashcards').textContent) || 0;
+        const mastered = parseInt(document.getElementById('masteredFlashcards').textContent) || 0;
+        const streak = userProgress.stats.streak || 0;
+        
+        aboutStats.innerHTML = `
+            <p><strong>Statystyki:</strong></p>
+            <p>Fiszek: ${total}</p>
+            <p>Opanowanych: ${mastered} (${total > 0 ? Math.round((mastered/total)*100) : 0}%)</p>
+            <p>Seria dni: ${streak}</p>
+        `;
+    }
+}
+
+function closeAboutModal() {
+    document.getElementById('aboutModal').style.display = 'none';
+}
+
+function showHelp() {
+    document.getElementById('helpModal').style.display = 'block';
+}
+
+function closeHelpModal() {
+    document.getElementById('helpModal').style.display = 'none';
+}
+
+function triggerFileInput() {
+    document.getElementById('fileInput').click();
+}
+
+function clearFileInput() {
+    document.getElementById('fileInput').value = '';
+    document.getElementById('filePreview').style.display = 'none';
+    showNotification('Plik został usunięty', 'info');
+}
+
+// ==================== UTILITIES ====================
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
 }
 
 // Zamknij modal po kliknięciu poza nim
 window.onclick = function(event) {
-    const modal = document.getElementById('deadlineModal');
-    if (event.target === modal) {
-        closeModal();
-    }
+    const modals = ['deadlineModal', 'aboutModal', 'helpModal'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (event.target === modal) {
+            if (modalId === 'deadlineModal') closeModal();
+            else if (modalId === 'aboutModal') closeAboutModal();
+            else if (modalId === 'helpModal') closeHelpModal();
+        }
+    });
 };
 
-// Zapobiegaj domyślnej akcji dla drop
-window.addEventListener('dragover', (e) => {
-    e.preventDefault();
-});
-
-window.addEventListener('drop', (e) => {
-    e.preventDefault();
-});
+console.log('Fiszkownica - aplikacja załadowana pomyślnie!');
