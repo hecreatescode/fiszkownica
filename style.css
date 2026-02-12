@@ -1857,14 +1857,37 @@ kbd {
         font-size: 14px;
     }
     
+    header {
+        padding: 0.5rem 0;
+    }
+    
     .header-content {
         flex-direction: column;
         text-align: center;
         gap: 1.5rem;
+        flex-direction: row;
+        text-align: left;
+        gap: 0.5rem;
+        justify-content: space-between;
+        padding: 0 1rem;
+    }
+    
+    .logo-area {
+        flex: 1;
+    }
+
+    .app-subtitle {
+        display: none;
+    }
+
+    .logo {
+        font-size: 1.3rem;
     }
     
     .header-actions {
         justify-content: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
     }
     
     .main-menu {
@@ -1986,6 +2009,16 @@ kbd {
     
     .menu-card {
         padding: 1.5rem;
+    }
+
+    /* Ukrywanie tekstu przycisków w nagłówku na małych ekranach */
+    .header-actions .btn-text {
+        display: none;
+    }
+
+    .header-actions .btn {
+        padding: 0.5rem;
+        min-height: 36px;
     }
 }
 
