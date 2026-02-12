@@ -1863,6 +1863,7 @@ kbd {
     
     .header-content {
         flex-direction: row;
+        flex-wrap: nowrap;
         text-align: left;
         gap: 0.5rem;
         justify-content: space-between;
@@ -1881,6 +1882,10 @@ kbd {
         font-size: 1.2rem;
     }
     
+    .logo i {
+        font-size: 1.4rem;
+    }
+    
     .header-actions {
         justify-content: flex-end;
         gap: 0.5rem;
@@ -1888,14 +1893,14 @@ kbd {
 
     /* Kompaktowe przyciski w nagłówku na mobile */
     .header-actions .btn-text {
-        display: none;
+        display: none !important;
     }
 
     .header-actions .btn {
-        padding: 0;
-        width: 36px;
-        height: 36px;
-        min-height: 36px;
+        padding: 0 !important;
+        width: 40px;
+        height: 40px;
+        min-height: 40px !important;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -1917,6 +1922,12 @@ kbd {
         z-index: 1001;
         margin-top: 5px;
         pointer-events: none;
+    }
+
+    /* Dostosowanie wskaźnika postępu na mobile */
+    .progress-indicator {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
     }
     
     .main-menu {

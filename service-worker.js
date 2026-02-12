@@ -1,6 +1,6 @@
 // Service Worker dla Fiszkownica PWA
 
-const CACHE_NAME = 'fiszkownica-v1.0.1';
+const CACHE_NAME = 'fiszkownica-v1.0.2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

@@ -1,5 +1,6 @@
 // Fiszkownica - Główny plik JavaScript
 // Wersja: 1.0.1
+// Wersja: 1.0.2
 
 // ==================== GŁÓWNE ZMIENNE APLIKACJI ====================
 let currentDeck = null;
@@ -15,6 +16,7 @@ let currentTestQuestion = 0;
 let testResults = { correct: 0, total: 0 };
 let selectedOption = null;
 let trueFalseAnswer = null;
+let currentTrueFalseCorrect = null;
 let currentDeadlineKey = null;
 let testLanguage = 'polish';
 let currentSortMethod = 'default';
@@ -753,23 +755,21 @@ function studyDeck(deckId) {
     }
 }
 
-function startTestDeck(deckId) {
+async function startTestDeck(deckId) {
     const deck = appData.decks.find(d => d.id === deckId);
     if (deck && Array.isArray(deck.topics) && deck.topics.length > 0) {
-        selectTestTopic(deckId, deck.topics[0].id);
+        await selectTestTopic(deckId, deck.topics[0].id);
         showSection('test');
     }
 }
 
 // ==================== WYBÓR TEMATU DO NAUKI ====================
-async function selectTopic(deckId, topicId) {
+async function loadTopicFlashcards(deckId, topicId) {
     const deck = appData.decks.find(d => d.id === deckId);
-    if (!deck || !Array.isArray(deck.topics)) return;
-
+    if (!deck) return null;
     const topic = deck.topics.find(t => t.id === topicId);
-    if (!topic) return;
+    if (!topic) return null;
 
-    // Załaduj flashcards jeśli są puste
     if (!topic.flashcards || topic.flashcards.length === 0) {
         try {
             const response = await fetch(`data/${deck.id}/${topic.file}`);
@@ -780,6 +780,14 @@ async function selectTopic(deckId, topicId) {
             topic.flashcards = [];
         }
     }
+    return topic;
+}
+
+async function selectTopic(deckId, topicId) {
+    const topic = await loadTopicFlashcards(deckId, topicId);
+    if (!topic) return;
+    
+    const deck = appData.decks.find(d => d.id === deckId);
 
     currentDeck = deckId;
     currentTopic = topicId;
@@ -1263,12 +1271,10 @@ function updateTestSettings() {
     }
 }
 
-function selectTestTopic(deckId, topicId) {
-    const deck = appData.decks.find(d => d.id === deckId);
-    if (!deck) return;
-
-    const topic = deck.topics.find(t => t.id === topicId);
+async function selectTestTopic(deckId, topicId) {
+    const topic = await loadTopicFlashcards(deckId, topicId);
     if (!topic) return;
+    const deck = appData.decks.find(d => d.id === deckId);
 
     testDeck = deckId;
     testTopic = topicId;
@@ -1414,13 +1420,21 @@ function hideTestTopicSelection() {
     document.getElementById('testTopicSelection').style.display = 'none';
 }
 
-function startTestFromSelection() {
+async function startTestFromSelection() {
     if (selectedTopicsForTest.size === 0) {
         showNotification('Wybierz przynajmniej jeden temat', 'error');
         return;
     }
     
     hideTestTopicSelection();
+
+    // Ensure all selected topics are loaded
+    const loadPromises = [];
+    selectedTopicsForTest.forEach(topicKey => {
+        const [deckId, topicId] = topicKey.split('-');
+        loadPromises.push(loadTopicFlashcards(deckId, topicId));
+    });
+    await Promise.all(loadPromises);
     
     let allFlashcards = [];
     let selectedDeckName = '';
@@ -1754,7 +1768,8 @@ function displayTestQuestion() {
             document.getElementById('truefalseQuestion').textContent = `"${question.flashcard.english}" po polsku to "${displayedTranslation}"`;
         }
         
-        trueFalseAnswer = isCorrect;
+        currentTrueFalseCorrect = isCorrect;
+        trueFalseAnswer = null;
         
         const options = document.querySelectorAll('.test-tf-option');
         options.forEach(option => option.classList.remove('selected'));
@@ -1911,7 +1926,7 @@ function checkTrueFalseAnswer() {
     if (isReviewMode) {
         isCorrectAnswer = reviewQuestions[currentTestQuestion].correctAnswer === 'Prawda';
     } else {
-        isCorrectAnswer = trueFalseAnswer;
+        isCorrectAnswer = currentTrueFalseCorrect;
     }
     
     const feedback = document.getElementById('truefalseFeedback');
