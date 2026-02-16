@@ -765,23 +765,35 @@ async function startTestDeck(deckId) {
 // ==================== WYBÓR TEMATU DO NAUKI ====================
 async function loadTopicFlashcards(deckId, topicId) {
     const deck = appData.decks.find(d => d.id === deckId);
-    if (!deck) return null;
+    if (!deck) {
+        console.error(`Nie znaleziono decku o id: ${deckId}`);
+        return null;
+    }
     const topic = deck.topics.find(t => t.id === topicId);
-    if (!topic) return null;
+    if (!topic) {
+        console.error(`Nie znaleziono topicu o id: ${topicId} w decku ${deckId}`);
+        return null;
+    }
 
     if (!topic.flashcards || topic.flashcards.length === 0) {
         try {
-            const response = await fetch(`data/${deck.id}/${topic.file}`);
-            const data = await response.json();
-            topic.flashcards = Array.isArray(data) ? data : (data.flashcards || []);
-            if (topic.flashcards.length === 0) {
-                showNotification(`Brak fiszek w pliku ${topic.file}`, 'error');
+            const url = `data/${deck.id}/${topic.file}`;
+            console.log(`Próba pobrania: ${url}`);
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status} - ${response.statusText}`);
             }
+            const data = await response.json();
+            console.log(`Otrzymane dane dla ${topic.file}:`, data);
+            topic.flashcards = Array.isArray(data) ? data : (data.flashcards || []);
+            console.log(`Załadowano ${topic.flashcards.length} fiszek dla tematu ${topic.name}`);
         } catch (e) {
             console.error(`Błąd ładowania flashcards dla ${topic.id}:`, e);
             showNotification(`Nie udało się załadować pliku ${topic.file}. Upewnij się, że plik istnieje.`, 'error');
             topic.flashcards = [];
         }
+    } else {
+        console.log(`Fiszki dla tematu ${topic.name} już były załadowane (${topic.flashcards.length})`);
     }
     return topic;
 }
@@ -1503,6 +1515,14 @@ async function startTestFromSelection() {
 }
 
 function prepareTestQuestionsFromFlashcards(flashcards) {
+    if (!flashcards || flashcards.length === 0) {
+        showNotification('Brak fiszek do utworzenia testu.', 'error');
+        testQuestions = [];
+        testCounter.total = 0;
+        updateTestCounter();
+        return;
+    }
+    
     const questionCountSelect = document.getElementById('testQuestionsCount');
     const selectedCount = questionCountSelect ? questionCountSelect.value : 'all';
     
@@ -1559,6 +1579,15 @@ function prepareTestQuestions() {
 
     const deck = appData.decks.find(d => d.id === testDeck);
     const topic = deck.topics.find(t => t.id === testTopic);
+
+    // Sprawdzenie, czy są fiszki
+    if (!topic.flashcards || topic.flashcards.length === 0) {
+        showNotification('Brak fiszek w tym temacie. Sprawdź plik z danymi.', 'error');
+        testQuestions = [];
+        testCounter.total = 0;
+        updateTestCounter();
+        return;
+    }
 
     let availableFlashcards = [];
     
