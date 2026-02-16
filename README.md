@@ -2,7 +2,7 @@
 
 **Fiszkownica** to nowoczesna aplikacja webowa typu PWA (Progressive Web App) służąca do efektywnej nauki języków obcych za pomocą fiszek. Wykorzystuje system powtórek w odstępach czasowych (Spaced Repetition System), aby zmaksymalizować zapamiętywanie materiału.
 
-![Wersja](https://img.shields.io/badge/wersja-1.0.1-blue)
+![Wersja](https://img.shields.io/badge/wersja-1.0.2-blue)
 ![Licencja](https://img.shields.io/badge/licencja-MIT-green)
 
 ## ✨ Główne funkcjonalności
