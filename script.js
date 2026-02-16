@@ -1,5 +1,5 @@
 // Fiszkownica - Główny plik JavaScript
-// Wersja: 1.0.2 (poprawiona obsługa testów)
+// Wersja: 1.0.3 (poprawione liczniki, testy i wizualizacja poziomów)
 
 // ==================== GŁÓWNE ZMIENNE APLIKACJI ====================
 let currentDeck = null;
@@ -554,7 +554,8 @@ function loadDecks() {
             topicCount += topics.length;
             topics.forEach(topic => {
                 if (!topic || typeof topic !== 'object') return;
-                const flashcardsLength = Array.isArray(topic.flashcards) ? topic.flashcards.length : 0;
+                // POPRAWKA: używamy topic.count zamiast topic.flashcards.length
+                const flashcardsLength = topic.count || 0;
                 flashcardCount += flashcardsLength;
                 if (userProgress && userProgress.decks && userProgress.decks[deck.id] && userProgress.decks[deck.id][topic.id]) {
                     const topicProgress = userProgress.decks[deck.id][topic.id];
@@ -626,7 +627,8 @@ function loadDecks() {
                 <div class="deck-topics-container" id="${deckId}" style="display:none;">
                     ${(Array.isArray(deck.topics) ? deck.topics : []).map(topic => {
                     if (!topic || typeof topic !== 'object') return '';
-                    const flashcardsLength = Array.isArray(topic.flashcards) ? topic.flashcards.length : 0;
+                    // POPRAWKA: używamy topic.count zamiast topic.flashcards.length
+                    const flashcardsLength = topic.count || 0;
                     const topicStats = calculateTopicStats(deck.id, topic.id, flashcardsLength);
                     const topicDeadlineInfo = getDeadlineInfo(deck.id, topic.id);
                     return `
@@ -702,11 +704,8 @@ function calculateDeckStats(deck) {
             console.warn('calculateDeckStats: topic[' + index + '] nie jest obiektem', topic);
             return;
         }
-        if (!Array.isArray(topic.flashcards)) {
-            console.warn('calculateDeckStats: topic[' + index + '].flashcards nie jest tablicą', topic.flashcards);
-            topic.flashcards = [];
-        }
-        const flashcardsLength = Array.isArray(topic.flashcards) ? topic.flashcards.length : 0;
+        // POPRAWKA: używamy topic.count
+        const flashcardsLength = topic.count || 0;
         totalFlashcards += flashcardsLength;
         
         if (userProgress && userProgress.decks && userProgress.decks[deck.id] && userProgress.decks[deck.id][topic.id]) {
@@ -765,15 +764,9 @@ async function startTestDeck(deckId) {
 // ==================== WYBÓR TEMATU DO NAUKI ====================
 async function loadTopicFlashcards(deckId, topicId) {
     const deck = appData.decks.find(d => d.id === deckId);
-    if (!deck) {
-        console.error(`Nie znaleziono decku o id: ${deckId}`);
-        return null;
-    }
+    if (!deck) return null;
     const topic = deck.topics.find(t => t.id === topicId);
-    if (!topic) {
-        console.error(`Nie znaleziono topicu o id: ${topicId} w decku ${deckId}`);
-        return null;
-    }
+    if (!topic) return null;
 
     if (!topic.flashcards || topic.flashcards.length === 0) {
         try {
@@ -786,7 +779,9 @@ async function loadTopicFlashcards(deckId, topicId) {
             const data = await response.json();
             console.log(`Otrzymane dane dla ${topic.file}:`, data);
             topic.flashcards = Array.isArray(data) ? data : (data.flashcards || []);
-            console.log(`Załadowano ${topic.flashcards.length} fiszek dla tematu ${topic.name}`);
+            if (topic.flashcards.length === 0) {
+                showNotification(`Brak fiszek w pliku ${topic.file}`, 'error');
+            }
         } catch (e) {
             console.error(`Błąd ładowania flashcards dla ${topic.id}:`, e);
             showNotification(`Nie udało się załadować pliku ${topic.file}. Upewnij się, że plik istnieje.`, 'error');
@@ -963,6 +958,11 @@ function displayCurrentFlashcard() {
     const currentLevel = getKnowledgeLevel(currentDeck, currentTopic, flashcard.originalIndices[0]);
     document.getElementById('flashcardLevel').textContent = getLevelText(currentLevel);
     document.getElementById('flashcardLevelBack').textContent = getLevelText(currentLevel);
+    
+    // POPRAWKA: dodanie klasy poziomu do kontenera fiszki
+    const flashcardElement = document.getElementById('flashcard');
+    flashcardElement.classList.remove('flashcard-level-new', 'flashcard-level-learning', 'flashcard-level-almost', 'flashcard-level-mastered');
+    flashcardElement.classList.add(`flashcard-level-${currentLevel}`);
     
     document.getElementById('flashcard').classList.remove('flipped');
     document.getElementById('flashcardNumber').textContent = `#${currentFlashcardIndex + 1}`;
@@ -1309,9 +1309,10 @@ async function selectTestTopic(deckId, topicId) {
     
     document.getElementById('testTitle').textContent = `Test: ${deck.name} - ${topic.name}`;
     document.getElementById('selectedDeckName').textContent = `${deck.name} - ${topic.name}`;
-    document.getElementById('selectedDeckInfo').textContent = `${topic.flashcards.length} fiszek`;
+    // POPRAWKA: wyświetlamy liczbę fiszek z topic.count
+    document.getElementById('selectedDeckInfo').textContent = `${topic.count || 0} fiszek`;
     
-    const topicStats = calculateTopicStats(deckId, topicId, topic.flashcards.length);
+    const topicStats = calculateTopicStats(deckId, topicId, topic.count || 0);
     document.getElementById('selectedDeckStats').innerHTML = `
         <span class="progress-badge">${topicStats.progress}% opanowanych</span>
     `;
@@ -1346,7 +1347,8 @@ function showTestTopicSelection() {
                 deckId: deck.id,
                 topicId: topic.id,
                 topicName: topic.name,
-                flashcardCount: topic.flashcards.length,
+                // POPRAWKA: używamy topic.count
+                flashcardCount: topic.count || 0,
                 isSelected: isSelected
             });
         });
@@ -1515,6 +1517,7 @@ async function startTestFromSelection() {
 }
 
 function prepareTestQuestionsFromFlashcards(flashcards) {
+    // POPRAWKA: sprawdzenie czy są fiszki
     if (!flashcards || flashcards.length === 0) {
         showNotification('Brak fiszek do utworzenia testu.', 'error');
         testQuestions = [];
@@ -1522,7 +1525,7 @@ function prepareTestQuestionsFromFlashcards(flashcards) {
         updateTestCounter();
         return;
     }
-    
+
     const questionCountSelect = document.getElementById('testQuestionsCount');
     const selectedCount = questionCountSelect ? questionCountSelect.value : 'all';
     
@@ -1580,9 +1583,12 @@ function prepareTestQuestions() {
     const deck = appData.decks.find(d => d.id === testDeck);
     const topic = deck.topics.find(t => t.id === testTopic);
 
-    // Sprawdzenie, czy są fiszki
+    // POPRAWKA: jeśli fiszki nie są załadowane, spróbuj załadować
     if (!topic.flashcards || topic.flashcards.length === 0) {
-        showNotification('Brak fiszek w tym temacie. Sprawdź plik z danymi.', 'error');
+        console.warn('Fiszki dla tematu nie są załadowane, próbuję załadować...');
+        // Możemy wywołać loadTopicFlashcards, ale to może być asynchroniczne – lepiej zrobić to wcześniej.
+        // W selectTestTopic już ładujemy, więc tutaj powinny być.
+        showNotification('Brak fiszek w tym temacie. Spróbuj ponownie.', 'error');
         testQuestions = [];
         testCounter.total = 0;
         updateTestCounter();
@@ -2062,7 +2068,7 @@ function finishTest() {
     document.getElementById('correctAnswers').textContent = testResults.correct;
     document.getElementById('incorrectAnswers').textContent = testResults.total - testResults.correct;
     document.getElementById('scoreValue').textContent = testResults.correct;
-    document.getElementById('scoreMax').textContent = `/ ${testResults.total}`; // Poprawione
+    document.getElementById('scoreMax').textContent = `/ ${testResults.total}`;
     document.getElementById('percentageScore').textContent = `${Math.round((testResults.correct / testResults.total) * 100)}%`;
     document.getElementById('testTime').textContent = `${seconds}s`;
     
@@ -2139,7 +2145,7 @@ function reviewIncorrectAnswers() {
 
 function finishReview() {
     document.getElementById('correctAnswers').textContent = testResults.correct;
-    document.getElementById('scoreMax').textContent = `/ ${testResults.total}`; // Poprawione
+    document.getElementById('scoreMax').textContent = `/ ${testResults.total}`;
     document.getElementById('testResult').style.display = 'block';
     document.getElementById('incorrectAnswersList').style.display = 'none';
     incorrectAnswers = [];
@@ -2282,24 +2288,31 @@ function updateStats() {
 
     appData.decks.forEach(deck => {
         deck.topics.forEach(topic => {
-            total += topic.flashcards.length;
+            // POPRAWKA: używamy topic.count zamiast topic.flashcards.length
+            const flashcardsLength = topic.count || 0;
+            total += flashcardsLength;
             
-            topic.flashcards.forEach((flashcard, index) => {
-                const level = getKnowledgeLevel(deck.id, topic.id, index);
-                switch(level) {
-                    case 'mastered':
-                        mastered++;
-                        break;
-                    case 'learning':
-                    case 'almost':
-                        learning++;
-                        break;
-                    case 'new':
-                    default:
-                        newCards++;
-                        break;
-                }
-            });
+            // Ale aby policzyć poziom, potrzebujemy rzeczywistych fiszek – muszą być załadowane.
+            // W przeciwnym razie nie wiemy, ile jest opanowanych.
+            // Możemy to zrobić tylko dla załadowanych tematów.
+            if (topic.flashcards && topic.flashcards.length > 0) {
+                topic.flashcards.forEach((flashcard, index) => {
+                    const level = getKnowledgeLevel(deck.id, topic.id, index);
+                    switch(level) {
+                        case 'mastered':
+                            mastered++;
+                            break;
+                        case 'learning':
+                        case 'almost':
+                            learning++;
+                            break;
+                        case 'new':
+                        default:
+                            newCards++;
+                            break;
+                    }
+                });
+            }
         });
     });
 
@@ -2558,6 +2571,7 @@ function createNewDeck() {
             {
                 id: newTopicId,
                 name: topicName,
+                count: 0, // POPRAWKA: dodajemy count
                 flashcards: []
             }
         ]

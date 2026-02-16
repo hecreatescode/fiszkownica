@@ -660,6 +660,23 @@ header {
     height: 400px;
     position: relative;
     cursor: pointer;
+    transition: border 0.3s ease, box-shadow 0.3s ease;
+    border-radius: var(--border-radius);
+}
+
+/* POPRAWKA: klasy poziomów dla fiszki */
+.flashcard-level-new {
+    border: 4px solid var(--level-new);
+    box-shadow: 0 0 0 2px var(--level-new-text);
+}
+.flashcard-level-learning {
+    border: 4px solid var(--level-learning);
+}
+.flashcard-level-almost {
+    border: 4px solid var(--level-almost);
+}
+.flashcard-level-mastered {
+    border: 4px solid var(--level-mastered);
 }
 
 .flashcard-inner {
@@ -679,7 +696,7 @@ header {
     width: 100%;
     height: 100%;
     backface-visibility: hidden;
-    border-radius: var(--border-radius);
+    border-radius: calc(var(--border-radius) - 4px); /* odejmujemy szerokość obramowania */
     display: flex;
     flex-direction: column;
     background: var(--light);
@@ -2372,88 +2389,88 @@ body.dark-mode .deck-actions-footer {
     min-height: 32px;
 }
 
-    /* ==================== TEST DECK SELECTOR ENHANCEMENTS ==================== */
-    .test-deck-selector {
-        box-shadow: var(--box-shadow);
-        transition: var(--transition);
-    }
-    .test-deck-selector:focus-within, .test-deck-selector:hover {
-        border-color: var(--primary);
-        box-shadow: var(--box-shadow-lg);
-    }
+/* ==================== TEST DECK SELECTOR ENHANCEMENTS ==================== */
+.test-deck-selector {
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+}
+.test-deck-selector:focus-within, .test-deck-selector:hover {
+    border-color: var(--primary);
+    box-shadow: var(--box-shadow-lg);
+}
 
-    .selected-deck {
-        box-shadow: var(--box-shadow-sm);
-        border: 2px solid var(--gray-light);
-        transition: var(--transition);
-    }
-    .selected-deck.selected, .selected-deck:focus-within, .selected-deck:hover {
-        border-color: var(--primary);
-        box-shadow: var(--box-shadow-lg);
-        background: var(--gradient-primary);
-        color: #fff;
-    }
-    .selected-deck.selected .selected-deck-info i,
-    .selected-deck:focus-within .selected-deck-info i,
-    .selected-deck:hover .selected-deck-info i {
-        color: #fff;
-    }
+.selected-deck {
+    box-shadow: var(--box-shadow-sm);
+    border: 2px solid var(--gray-light);
+    transition: var(--transition);
+}
+.selected-deck.selected, .selected-deck:focus-within, .selected-deck:hover {
+    border-color: var(--primary);
+    box-shadow: var(--box-shadow-lg);
+    background: var(--gradient-primary);
+    color: #fff;
+}
+.selected-deck.selected .selected-deck-info i,
+.selected-deck:focus-within .selected-deck-info i,
+.selected-deck:hover .selected-deck-info i {
+    color: #fff;
+}
 
-    .test-topic-selection {
-        box-shadow: var(--box-shadow);
-        transition: var(--transition);
-    }
-    .test-topic-selection:focus-within, .test-topic-selection:hover {
-        border-color: var(--primary);
-        box-shadow: var(--box-shadow-lg);
-    }
+.test-topic-selection {
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+}
+.test-topic-selection:focus-within, .test-topic-selection:hover {
+    border-color: var(--primary);
+    box-shadow: var(--box-shadow-lg);
+}
 
-    .test-topics-container .topic-item {
-        border: 2px solid var(--gray-light);
-        border-radius: var(--border-radius-xs);
-        margin-bottom: 10px;
-        background: var(--light);
-        transition: var(--transition);
-        cursor: pointer;
-        box-shadow: var(--box-shadow-sm);
-    }
-    .test-topics-container .topic-item.selected,
-    .test-topics-container .topic-item:focus,
-    .test-topics-container .topic-item:hover {
-        border-color: var(--primary);
-        background: var(--gradient-primary);
-        color: #fff;
-        box-shadow: var(--box-shadow-lg);
-    }
+.test-topics-container .topic-item {
+    border: 2px solid var(--gray-light);
+    border-radius: var(--border-radius-xs);
+    margin-bottom: 10px;
+    background: var(--light);
+    transition: var(--transition);
+    cursor: pointer;
+    box-shadow: var(--box-shadow-sm);
+}
+.test-topics-container .topic-item.selected,
+.test-topics-container .topic-item:focus,
+.test-topics-container .topic-item:hover {
+    border-color: var(--primary);
+    background: var(--gradient-primary);
+    color: #fff;
+    box-shadow: var(--box-shadow-lg);
+}
 
-    /* Dark mode poprawki */
-    .dark-mode .test-deck-selector,
-    .dark-mode .test-topic-selection {
-        background: var(--gray-light);
-        border-color: #3a3f47;
-        box-shadow: var(--box-shadow);
-    }
-    .dark-mode .selected-deck {
-        background: var(--gray-light);
-        color: var(--dark);
-        border-color: #3a3f47;
-    }
-    .dark-mode .selected-deck.selected,
-    .dark-mode .selected-deck:focus-within,
-    .dark-mode .selected-deck:hover {
-        background: var(--gradient-primary);
-        color: #fff;
-        border-color: var(--primary);
-    }
-    .dark-mode .test-topics-container .topic-item {
-        background: var(--gray-light);
-        color: var(--dark);
-        border-color: #3a3f47;
-    }
-    .dark-mode .test-topics-container .topic-item.selected,
-    .dark-mode .test-topics-container .topic-item:focus,
-    .dark-mode .test-topics-container .topic-item:hover {
-        background: var(--gradient-primary);
-        color: #fff;
-        border-color: var(--primary);
-    }
+/* Dark mode poprawki */
+.dark-mode .test-deck-selector,
+.dark-mode .test-topic-selection {
+    background: var(--gray-light);
+    border-color: #3a3f47;
+    box-shadow: var(--box-shadow);
+}
+.dark-mode .selected-deck {
+    background: var(--gray-light);
+    color: var(--dark);
+    border-color: #3a3f47;
+}
+.dark-mode .selected-deck.selected,
+.dark-mode .selected-deck:focus-within,
+.dark-mode .selected-deck:hover {
+    background: var(--gradient-primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+.dark-mode .test-topics-container .topic-item {
+    background: var(--gray-light);
+    color: var(--dark);
+    border-color: #3a3f47;
+}
+.dark-mode .test-topics-container .topic-item.selected,
+.dark-mode .test-topics-container .topic-item:focus,
+.dark-mode .test-topics-container .topic-item:hover {
+    background: var(--gradient-primary);
+    color: #fff;
+    border-color: var(--primary);
+}
