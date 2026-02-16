@@ -18,7 +18,6 @@
     <!-- Preload critical assets -->
     <link rel="preload" href="style.css" as="style">
     <link rel="preload" href="script.js" as="script">
-
 </head>
 <body>
     <!-- Loader Animation -->
@@ -169,7 +168,6 @@
                            id="deckSearch" 
                            placeholder="Szukaj działu lub tematu..."
                            oninput="filterDecks()">
-                    <div class="filter-tags" id="filterTags"></div>
                 </div>
                 
                 <!-- Statystyki zestawów -->
@@ -205,9 +203,7 @@
                 </div>
                 
                 <!-- Kontener zestawów -->
-                <div class="decks-container" id="decksContainer">
-                    <!-- Zestawy i tematy są generowane dynamicznie przez JavaScript na podstawie decks.json -->
-                </div>
+                <div id="decksContainer" class="decks-container"></div>
             </div>
 
             <!-- Nauka -->
@@ -252,10 +248,10 @@
                     </div>
                     <div class="filter-actions">
                         <button class="btn btn-primary" onclick="applyAdvancedFilters()">
-                            <i class="fas fa-check"></i> Zastosuj filtry
+                            <i class="fas fa-check"></i> Zastosuj
                         </button>
                         <button class="btn btn-outline" onclick="resetAdvancedFilters()">
-                            <i class="fas fa-redo"></i> Resetuj
+                            <i class="fas fa-redo"></i> Reset
                         </button>
                     </div>
                 </div>
@@ -364,7 +360,7 @@
                     </div>
                 </div>
                 
-                <!-- Licznik testu -->
+                <!-- Licznik testu (generowany dynamicznie) -->
                 <div id="testCounter" class="test-counter"></div>
                 
                 <!-- Ustawienia testu -->
@@ -413,42 +409,17 @@
                     </div>
                 </div>
                 
-                <!-- Wybór zestawu testowego -->
+                <!-- Wybór zestawu/testu -->
                 <div class="test-deck-selector">
                     <div class="selector-header">
-                        <h4><i class="fas fa-folder-open"></i> Wybierz zestaw do testu:</h4>
-                        <button class="btn btn-outline btn-small" onclick="showTestTopicSelection()" id="selectDeckBtn">
-                            <i class="fas fa-folder-open"></i> Wybierz
+                        <h4><i class="fas fa-folder-open"></i> Wybierz temat/y do testu:</h4>
+                        <button class="btn btn-primary" onclick="startTestFromSelection()" id="startTestBtn">
+                            <i class="fas fa-play"></i> Rozpocznij test
                         </button>
                     </div>
                     
-                    <div id="selectedTestDeck" class="selected-deck">
-                        <div class="selected-deck-info">
-                            <i class="fas fa-folder"></i>
-                            <div>
-                                <strong id="selectedDeckName">Nie wybrano zestawu</strong>
-                                <small id="selectedDeckInfo">Wybierz zestaw, aby rozpocząć test</small>
-                            </div>
-                        </div>
-                        <div class="selected-deck-stats" id="selectedDeckStats"></div>
-                    </div>
-                </div>
-                
-                <!-- Wybór tematów -->
-                <div id="testTopicSelection" class="test-topic-selection" style="display: none;">
-                    <div class="selection-header">
-                        <h3><i class="fas fa-tags"></i> Wybierz tematy do testu:</h3>
-                        <button class="btn btn-outline btn-small" onclick="hideTestTopicSelection()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
                     <div id="testTopicsContainer" class="test-topics-container">
-                        <!-- Tematy będą dodane dynamicznie -->
-                    </div>
-                    <div class="selection-actions">
-                        <button class="btn btn-primary" onclick="startTestFromSelection()">
-                            <i class="fas fa-play"></i> Rozpocznij test
-                        </button>
+                        <!-- Tematy będą dodane dynamicznie z checkboxami -->
                     </div>
                 </div>
                 
@@ -570,13 +541,13 @@
                     <!-- Przyciski akcji -->
                     <div class="result-actions">
                         <button class="btn btn-primary" onclick="reviewIncorrectAnswers()">
-                            <i class="fas fa-redo"></i> Popraw błędne odpowiedzi
+                            <i class="fas fa-redo"></i> Popraw błędne
                         </button>
                         <button class="btn btn-outline" onclick="resetTest()">
-                            <i class="fas fa-play"></i> Rozpocznij nowy test
+                            <i class="fas fa-play"></i> Nowy test
                         </button>
                         <button class="btn btn-outline" onclick="showSection('mainMenu')">
-                            <i class="fas fa-home"></i> Powrót do menu
+                            <i class="fas fa-home"></i> Menu
                         </button>
                     </div>
                 </div>
@@ -596,36 +567,24 @@
                 <!-- Główne statystyki -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-layer-group"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
                         <div class="stat-value" id="totalFlashcards">0</div>
                         <div class="stat-label">Wszystkich fiszek</div>
-                        <div class="stat-trend" id="totalTrend"></div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-star"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-star"></i></div>
                         <div class="stat-value" id="masteredFlashcards">0</div>
                         <div class="stat-label">Opanowanych</div>
-                        <div class="stat-trend" id="masteredTrend"></div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-book"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
                         <div class="stat-value" id="learningFlashcards">0</div>
                         <div class="stat-label">W trakcie nauki</div>
-                        <div class="stat-trend" id="learningTrend"></div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-plus-circle"></i>
-                        </div>
+                        <div class="stat-icon"><i class="fas fa-plus-circle"></i></div>
                         <div class="stat-value" id="newFlashcards">0</div>
                         <div class="stat-label">Do nauki</div>
-                        <div class="stat-trend" id="newTrend"></div>
                     </div>
                 </div>
                 
@@ -637,7 +596,7 @@
                             <span class="stats-badge today-badge">Dziś</span>
                         </div>
                         <div class="stats-content">
-                            <p id="todayActivity">Przećwiczyłeś 0 fiszek przez 0 minut</p>
+                            <p id="todayActivity">Przećwiczyłeś 0 fiszek</p>
                             <div class="activity-breakdown">
                                 <div class="activity-item">
                                     <i class="fas fa-book activity-icon study-icon"></i>
@@ -664,10 +623,7 @@
                             <span class="stats-badge streak-badge" id="streakBadge">0 dni</span>
                         </div>
                         <div class="stats-content">
-                            <p id="learningStreak">Uczysz się codziennie od 0 dni z rzędu!</p>
-                            <div class="streak-calendar" id="streakCalendar">
-                                <!-- Kalendarz serii będzie dodany dynamicznie -->
-                            </div>
+                            <p id="learningStreak">Uczysz się codziennie od 0 dni!</p>
                         </div>
                     </div>
                     
@@ -680,14 +636,14 @@
                             <div id="achievementsList" class="achievements-list">
                                 <div class="achievement loading-achievement">
                                     <i class="fas fa-spinner fa-spin"></i>
-                                    <span>Ładowanie osiągnięć...</span>
+                                    <span>Ładowanie...</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Wykresy statystyk -->
+                <!-- Wykres -->
                 <div class="stats-charts">
                     <div class="menu-card">
                         <h3><i class="fas fa-chart-bar"></i> Postęp w czasie</h3>
@@ -711,134 +667,57 @@
                 
                 <div class="import-container">
                     <div class="menu-card">
-                        <div class="menu-card-header">
-                            <h3><i class="fas fa-info-circle"></i> Instrukcja importu</h3>
-                        </div>
+                        <h3><i class="fas fa-info-circle"></i> Instrukcja importu</h3>
                         <div class="import-instructions">
-                            <p>Przygotuj plik TXT w odpowiednim formacie:</p>
-                            <div class="code-block">
-<pre>polskie słowo - angielskie tłumaczenie
+                            <p>Przygotuj plik TXT w formacie:</p>
+                            <pre>polskie słowo - angielskie tłumaczenie
 kot - cat
-pies - dog
-dom - house
-...
-</pre>
-                            </div>
-                            <div class="instructions-tips">
-                                <div class="tip">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span>Każda para w osobnej linii</span>
-                                </div>
-                                <div class="tip">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span>Separator: " - " (spacja, myślnik, spacja)</span>
-                                </div>
-                                <div class="tip">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span>Kodowanie: UTF-8</span>
-                                </div>
-                            </div>
+pies - dog</pre>
                         </div>
                     </div>
                     
                     <div class="menu-card">
-                        <div class="menu-card-header">
-                            <h3><i class="fas fa-cloud-upload-alt"></i> Prześlij plik</h3>
+                        <h3><i class="fas fa-cloud-upload-alt"></i> Prześlij plik</h3>
+                        <div class="file-upload" id="fileUpload" onclick="triggerFileInput()">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <p>Kliknij lub upuść plik tutaj</p>
+                            <small>.txt</small>
+                            <input type="file" id="fileInput" accept=".txt" style="display: none;" onchange="handleFileUpload(event)">
                         </div>
-                        <div class="file-upload-container">
-                            <div class="file-upload" id="fileUpload" onclick="triggerFileInput()">
-                                <div class="upload-icon">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                </div>
-                                <div class="upload-text">
-                                    <p>Kliknij lub upuść plik tutaj</p>
-                                    <small>Obsługiwany format: .txt</small>
-                                </div>
-                                <input type="file" id="fileInput" accept=".txt" style="display: none;" 
-                                       onchange="handleFileUpload(event)">
-                            </div>
-                            <div id="filePreview" class="file-preview" style="display: none;">
-                                <div class="preview-header">
-                                    <i class="fas fa-file-alt"></i>
-                                    <span id="fileName">Plik.txt</span>
-                                    <button class="btn btn-small btn-outline" onclick="clearFileInput()">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                                <div class="preview-content">
-                                    <div class="preview-stats">
-                                        <span id="fileLines">0</span> linii
-                                    </div>
-                                    <div id="fileContent" class="preview-text"></div>
-                                </div>
-                            </div>
+                        <div id="filePreview" class="file-preview" style="display: none;">
+                            <div><strong id="fileName">Plik.txt</strong> (<span id="fileLines">0</span> linii)</div>
+                            <pre id="fileContent"></pre>
+                            <button class="btn btn-small btn-outline" onclick="clearFileInput()">Usuń</button>
                         </div>
                     </div>
                     
                     <div class="menu-card">
-                        <div class="menu-card-header">
-                            <h3><i class="fas fa-folder-plus"></i> Utwórz nowy zestaw</h3>
-                        </div>
+                        <h3><i class="fas fa-folder-plus"></i> Utwórz nowy zestaw</h3>
                         <div class="create-deck-form">
-                            <div class="form-group">
-                                <label for="newDeckName">
-                                    <i class="fas fa-folder"></i> Nazwa działu
-                                </label>
-                                <input type="text" 
-                                       class="form-input" 
-                                       id="newDeckName" 
-                                       placeholder="Nazwa działu">
-                            </div>
-                            <div class="form-group">
-                                <label for="newTopicName">
-                                    <i class="fas fa-tag"></i> Nazwa tematu
-                                </label>
-                                <input type="text" 
-                                       class="form-input" 
-                                       id="newTopicName" 
-                                       placeholder="Nazwa tematu">
-                            </div>
-                            <div class="form-group">
-                                <label for="deckDescription">
-                                    <i class="fas fa-align-left"></i> Opis (opcjonalnie)
-                                </label>
-                                <textarea class="form-input" 
-                                          id="deckDescription" 
-                                          placeholder="Opis zestawu..."
-                                          rows="3"></textarea>
-                            </div>
-                            <button class="btn btn-primary" onclick="createNewDeck()">
-                                <i class="fas fa-plus"></i> Utwórz zestaw
-                            </button>
+                            <input type="text" class="form-input" id="newDeckName" placeholder="Nazwa działu">
+                            <input type="text" class="form-input" id="newTopicName" placeholder="Nazwa tematu">
+                            <textarea class="form-input" id="deckDescription" placeholder="Opis (opcjonalnie)" rows="2"></textarea>
+                            <button class="btn btn-primary" onclick="createNewDeck()">Utwórz</button>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
         
-        <!-- Stopka aplikacji -->
+        <!-- Stopka -->
         <footer class="app-footer">
             <div class="footer-content">
-                <div class="footer-info">
-                    <p><i class="fas fa-layer-group"></i> Fiszkownica &copy; 2025-2026</p>
-                    <p class="footer-subtitle">Nauka języków przez fiszki</p>
-                </div>
+                <div><i class="fas fa-layer-group"></i> Fiszkownica &copy; 2025-2026</div>
                 <div class="footer-links">
-                    <button class="btn-link" onclick="showAbout()">
-                        <i class="fas fa-info-circle"></i> O aplikacji
-                    </button>
-                    <button class="btn-link" onclick="showHelp()">
-                        <i class="fas fa-question-circle"></i> Pomoc
-                    </button>
-                    <button class="btn-link" onclick="showInstallPrompt()" id="installButton" style="display: none;">
-                        <i class="fas fa-download"></i> Zainstaluj aplikację
-                    </button>
+                    <button class="btn-link" onclick="showAbout()">O aplikacji</button>
+                    <button class="btn-link" onclick="showHelp()">Pomoc</button>
+                    <button class="btn-link" onclick="showInstallPrompt()" id="installButton" style="display: none;">Zainstaluj</button>
                 </div>
             </div>
         </footer>
     </div>
 
-    <!-- Modal do ustawiania deadline -->
+    <!-- Modal deadline -->
     <div class="modal" id="deadlineModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -846,7 +725,7 @@ dom - house
                 <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <p id="modalDescription">Wybierz datę deadline:</p>
+                <p id="modalDescription">Wybierz datę:</p>
                 <input type="date" id="deadlineDate" class="modal-input">
                 <div class="modal-options">
                     <button class="btn btn-outline btn-small" onclick="setDefaultDeadline(1)">Jutro</button>
@@ -856,7 +735,7 @@ dom - house
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal()">Anuluj</button>
-                <button class="btn btn-primary" onclick="saveDeadline()">Zapisz deadline</button>
+                <button class="btn btn-primary" onclick="saveDeadline()">Zapisz</button>
             </div>
         </div>
     </div>
@@ -869,26 +748,9 @@ dom - house
                 <button class="modal-close" onclick="closeAboutModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="about-content">
-                    <div class="about-logo">
-                        <i class="fas fa-layer-group"></i>
-                        <h2>Fiszkownica</h2>
-                    </div>
-                    <p><strong>Wersja:</strong> 1.0.1</p>
-                    <p><strong>Prawa autorskie:</strong> &copy; 2025-2026</p>
-                    <p><strong>Opis:</strong> Aplikacja do nauki języków za pomocą fiszek z systemem spaced repetition.</p>
-                    <div class="about-features">
-                        <h4><i class="fas fa-star"></i> Funkcje:</h4>
-                        <ul>
-                            <li><i class="fas fa-check"></i> System spaced repetition</li>
-                            <li><i class="fas fa-check"></i> 3 tryby testów</li>
-                            <li><i class="fas fa-check"></i> Statystyki i osiągnięcia</li>
-                            <li><i class="fas fa-check"></i> Responsywny design</li>
-                            <li><i class="fas fa-check"></i> PWA (możliwość instalacji)</li>
-                        </ul>
-                    </div>
-                    <div class="about-stats" id="aboutStats"></div>
-                </div>
+                <div class="about-logo"><i class="fas fa-layer-group"></i><h2>Fiszkownica</h2></div>
+                <p><strong>Wersja:</strong> 1.1.0</p>
+                <p>Nauka języków przez fiszki z systemem powtórek.</p>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" onclick="closeAboutModal()">Zamknij</button>
@@ -904,27 +766,9 @@ dom - house
                 <button class="modal-close" onclick="closeHelpModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="help-content">
-                    <div class="help-section">
-                        <h4><i class="fas fa-book"></i> Jak się uczyć?</h4>
-                        <p>1. Wybierz zestaw fiszek z sekcji "Moje zestawy"</p>
-                        <p>2. Oglądaj fiszki i oceniaj swoją znajomość</p>
-                        <p>3. System automatycznie zaplanuje powtórki</p>
-                    </div>
-                    <div class="help-section">
-                        <h4><i class="fas fa-pen"></i> Tryby testów</h4>
-                        <p><strong>Pisanie:</strong> Wpisz tłumaczenie z pamięci</p>
-                        <p><strong>Wielokrotny wybór:</strong> Wybierz poprawną odpowiedź</p>
-                        <p><strong>Prawda/Fałsz:</strong> Oceń czy tłumaczenie jest poprawne</p>
-                    </div>
-                    <div class="help-section">
-                        <h4><i class="fas fa-keyboard"></i> Skróty klawiaturowe</h4>
-                        <p><kbd>Spacja</kbd> - Obróć fiszkę</p>
-                        <p><kbd>→</kbd> - Następna fiszka</p>
-                        <p><kbd>←</kbd> - Poprzednia fiszka</p>
-                        <p><kbd>1-4</kbd> - Oceń znajomość (1=nowe, 4=umiem)</p>
-                    </div>
-                </div>
+                <p><kbd>Spacja</kbd> – obróć fiszkę</p>
+                <p><kbd>→</kbd> / <kbd>←</kbd> – nawigacja</p>
+                <p><kbd>1-4</kbd> – oceń znajomość</p>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" onclick="closeHelpModal()">Zamknij</button>
@@ -932,7 +776,7 @@ dom - house
         </div>
     </div>
 
-    <!-- Kontener na notyfikacje -->
+    <!-- Notifications -->
     <div id="notificationsContainer"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
