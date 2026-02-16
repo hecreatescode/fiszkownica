@@ -1,6 +1,5 @@
 // Fiszkownica - Główny plik JavaScript
-// Wersja: 1.0.1
-// Wersja: 1.0.2
+// Wersja: 1.0.2 (poprawiona obsługa testów)
 
 // ==================== GŁÓWNE ZMIENNE APLIKACJI ====================
 let currentDeck = null;
@@ -775,8 +774,12 @@ async function loadTopicFlashcards(deckId, topicId) {
             const response = await fetch(`data/${deck.id}/${topic.file}`);
             const data = await response.json();
             topic.flashcards = Array.isArray(data) ? data : (data.flashcards || []);
+            if (topic.flashcards.length === 0) {
+                showNotification(`Brak fiszek w pliku ${topic.file}`, 'error');
+            }
         } catch (e) {
             console.error(`Błąd ładowania flashcards dla ${topic.id}:`, e);
+            showNotification(`Nie udało się załadować pliku ${topic.file}. Upewnij się, że plik istnieje.`, 'error');
             topic.flashcards = [];
         }
     }
@@ -1643,8 +1646,15 @@ function updateTestCounter() {
 }
 
 function displayTestQuestion() {
-    setupTestCounter();
-    
+    // Sprawdzenie czy są pytania
+    if ((!isReviewMode && (!testQuestions || testQuestions.length === 0)) ||
+        (isReviewMode && (!reviewQuestions || reviewQuestions.length === 0))) {
+        showNotification('Brak fiszek do przetestowania w tym zestawie.', 'info');
+        // Opcjonalnie wróć do wyboru zestawu
+        showTestTopicSelection();
+        return;
+    }
+
     if (isReviewMode && currentTestQuestion >= reviewQuestions.length) {
         finishReview();
         return;
@@ -2022,8 +2032,8 @@ function finishTest() {
     
     document.getElementById('correctAnswers').textContent = testResults.correct;
     document.getElementById('incorrectAnswers').textContent = testResults.total - testResults.correct;
-    document.getElementById('totalQuestions').textContent = testResults.total;
     document.getElementById('scoreValue').textContent = testResults.correct;
+    document.getElementById('scoreMax').textContent = `/ ${testResults.total}`; // Poprawione
     document.getElementById('percentageScore').textContent = `${Math.round((testResults.correct / testResults.total) * 100)}%`;
     document.getElementById('testTime').textContent = `${seconds}s`;
     
@@ -2100,7 +2110,7 @@ function reviewIncorrectAnswers() {
 
 function finishReview() {
     document.getElementById('correctAnswers').textContent = testResults.correct;
-    document.getElementById('totalQuestions').textContent = testResults.total;
+    document.getElementById('scoreMax').textContent = `/ ${testResults.total}`; // Poprawione
     document.getElementById('testResult').style.display = 'block';
     document.getElementById('incorrectAnswersList').style.display = 'none';
     incorrectAnswers = [];
